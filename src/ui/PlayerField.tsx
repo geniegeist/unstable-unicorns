@@ -3,6 +3,8 @@ import type { Player, PlayerID } from "../game/player";
 import ImageLoader from '../assets/card/imageLoader';
 import { _typeToColor } from './util';
 import type { Card, CardID } from '../game/card';
+import React, { useState } from 'react';
+import CardHover from './CardHover';
 
 type Props = {
     players: Player[];
@@ -17,6 +19,8 @@ type Props = {
 }
 
 const PlayerField = (props: Props) => {
+    const [showHover, setShowHover] = useState<undefined | CardID>(undefined);
+
     return (
         <Wrapper>
             {props.players.map((pl, idx) => {
@@ -47,7 +51,17 @@ const PlayerField = (props: Props) => {
                             <Stable>
                                 {props.stable[pl.id].map(c => {
                                     return (
+                                        <div style={{position: "relative"}} onMouseEnter={() => {
+                                            setShowHover(c.id);
+                                        }} 
+                                        onMouseLeave={() => {
+                                            setShowHover(undefined);
+                                        }}>
                                         <UnicornImage key={c.id} isTranslucent={props.highlightMode ? !props.highlightMode.includes(c.id) : false} image={ImageLoader.load(c.image)} onClick={() => props.onStableCardClick(c.id)} />
+                                        {showHover === c.id &&
+                                            <CardHover position={"bottom"} offset={{x: 60, y: 0}} color={_typeToColor(c.type)} text={c.description}/>
+                                        }
+                                        </div>
                                     );
                                 })}
                                 {props.stable[pl.id].length === 0 &&
@@ -124,6 +138,7 @@ const Stable = styled.div`
     flex-wrap: wrap;
     align-items: center;
     justify-content: center;
+    position: relative;
 `;
 
 const UnicornImage = styled.div<{image: string, isTranslucent: boolean}>`

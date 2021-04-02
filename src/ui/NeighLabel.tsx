@@ -1,8 +1,11 @@
+import React, { useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import ImageLoader from '../assets/card/imageLoader';
-import { Card } from '../game/card';
+import { Card, CardID } from '../game/card';
 import { UnstableUnicornsGame } from '../game/game';
 import { NeighDiscussion } from '../game/neigh';
+import CardHover from './CardHover';
+import { _typeToColor } from './util';
 
 type Props = {
     card: Card;
@@ -19,6 +22,8 @@ type Props = {
 export type NeighLabelRole = "original_initiator" | "new_initiator" | "did_neigh" | "did_not_neigh" | "open" | "original_initiator_can_counterneigh";
 
 const NeighLabel = (props: Props) => {
+    const [showHover, setShowHover] = useState<undefined | CardID>(undefined);
+
     let text = "";
     if (props.role === "original_initiator") {
         text = "Other players may neigh your card. Wait for their decision..."
@@ -40,7 +45,18 @@ const NeighLabel = (props: Props) => {
 
     return (
         <Wrapper>
+            <div  onMouseEnter={() => {
+                                            setShowHover(props.card.id);
+                                        }} 
+                                        onMouseLeave={() => {
+                                            setShowHover(undefined);
+                                        }}>
             <CardImage src={ImageLoader.load(props.card.image)} />
+            {showHover === props.card.id &&
+                                            <CardHover position={"bottom"} offset={{x: 80, y: -30}} color={_typeToColor(props.card.type)} text={props.card.description}/>
+                                        }
+            </div>
+
             <div style={{display: "flex", flexDirection: "column"}}>
                 <div>
                     {text}
