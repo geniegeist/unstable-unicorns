@@ -323,7 +323,7 @@ function playSuperNeigh(G: UnstableUnicornsGame, ctx: Ctx, cardID: CardID, prota
         round.playerState[protagonist] = { vote: "neigh" };
         round.state = "neigh";
 
-        const cardWasNeighed = G.neighDiscussion.rounds.length % 2 === 0;
+        const cardWasNeighed = (G.neighDiscussion.rounds.length+1) % 2 === 0;
         if (cardWasNeighed) {
             G.discardPile.push(G.neighDiscussion.cardID);
         } else {
