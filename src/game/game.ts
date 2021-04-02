@@ -437,7 +437,7 @@ function end(G: UnstableUnicornsGame, ctx: Ctx, protagonist: PlayerID) {
 
             G.script.scenes = [...G.script.scenes, newScene];
         } else {
-            ctx.events?.endTurn!({next: protagonist});
+            ctx.events?.endTurn!();
         }
 
     }
