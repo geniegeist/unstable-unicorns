@@ -1,0 +1,1 @@
+web: node -r esm server_build/server.js
