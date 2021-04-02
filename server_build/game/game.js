@@ -369,7 +369,7 @@ function end(G, ctx, protagonist) {
             G.script.scenes = __spreadArrays(G.script.scenes, [newScene]);
         }
         else {
-            (_b = ctx.events) === null || _b === void 0 ? void 0 : _b.endTurn({ next: protagonist });
+            (_b = ctx.events) === null || _b === void 0 ? void 0 : _b.endTurn();
         }
     }
 }
