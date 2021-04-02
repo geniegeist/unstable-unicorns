@@ -9,7 +9,7 @@ const App = () => {
           <Route path="/test">
             <Client debug={"test"}/>
           </Route>
-          <Route path="/:gameId/:numPlayers/:playerID">
+          <Route path="/:matchID/:numPlayers/:playerID">
               <Client />
           </Route>
         </Switch>
