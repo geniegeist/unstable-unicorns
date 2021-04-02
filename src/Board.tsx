@@ -213,7 +213,7 @@ const Board = (props: any) => {
                 }}/>
             }
             {showPlayerHand !== undefined && 
-                <Finder cards={G.hand[playerID].map(c => G.deck[c])} onBackClick={() => setShowPlayerHand(undefined)} showBackButton={true} onCardClick={cardID => {
+                <Finder cards={G.hand[showPlayerHand].map(c => G.deck[c])} onBackClick={() => setShowPlayerHand(undefined)} showBackButton={true} onCardClick={cardID => {
                     
                 }} hide={G.playerEffects[showPlayerHand].find(o => o.effect.key === "your_hand_is_visible") === undefined} />
             }
