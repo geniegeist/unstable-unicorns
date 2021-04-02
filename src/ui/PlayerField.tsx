@@ -38,7 +38,7 @@ const PlayerField = (props: Props) => {
 
                                 </div>
                                 <CardCounter onClick={() => props.onHandClick(pl.id)}>
-                                    {props.handCount[idx]}
+                                    {props.handCount[parseInt(pl.id)]}
                                 </CardCounter>
                             </Title>
                             <UpgradeDowngradeStable>

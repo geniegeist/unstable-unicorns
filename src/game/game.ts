@@ -261,7 +261,8 @@ function playCard(G: UnstableUnicornsGame, ctx: Ctx, protagonist: PlayerID, card
             cardID, protagonist, rounds: [{
                 state: "open",
                 playerState: Object.fromEntries(G.players.map(pl => ([pl.id, { vote: pl.id === protagonist ? "no_neigh" : "undecided" }])))
-            }]
+            }],
+            target: protagonist,
         };
     }
 }
@@ -277,8 +278,9 @@ function playUpgradeDowngradeCard(G: UnstableUnicornsGame, ctx: Ctx, protagonist
         G.neighDiscussion = {
             cardID, protagonist, rounds: [{
                 state: "open",
-                playerState: Object.fromEntries(G.players.map(pl => ([pl.id, { vote: pl.id === protagonist ? "no_neigh" : "undecided" }])))
-            }]
+                playerState: Object.fromEntries(G.players.map(pl => ([pl.id, { vote: pl.id === protagonist ? "no_neigh" : "undecided" }]))),
+            }],
+            target: targetPlayer
         };
     }
 }
@@ -343,7 +345,7 @@ function dontPlayNeigh(G: UnstableUnicornsGame, ctx: Ctx, protagonist: PlayerID,
             if (cardWasNeighed) {
                 G.discardPile.push(G.neighDiscussion.cardID);
             } else {
-                enter(G, ctx, { playerID: G.neighDiscussion.protagonist, cardID: G.neighDiscussion.cardID })
+                enter(G, ctx, { playerID: G.neighDiscussion.target, cardID: G.neighDiscussion.cardID })
             }
             G.neighDiscussion = undefined;
         }
@@ -386,9 +388,58 @@ function drawAndEnd(G: UnstableUnicornsGame, ctx: Ctx) {
 function end(G: UnstableUnicornsGame, ctx: Ctx, protagonist: PlayerID) {
     if (G.playerEffects[protagonist].find(o => o.effect.key === "change_of_luck")) {
         G.playerEffects[protagonist] = G.playerEffects[protagonist].filter(o => o.effect.key !== "change_of_luck");
-        ctx.events?.endTurn!({next: protagonist});
+
+        if (G.hand[protagonist].length > 7) {
+            const newScene: Scene = {
+                id: _.uniqueId(),
+                mandatory: true,
+                endTurnImmediately: false,
+                actions: [{
+                    type: "action",
+                    instructions: [{
+                        id: _.uniqueId(),
+                            protagonist,
+                            state: "open",
+                            do: {
+                                key: "discard",
+                                info: {count: G.hand[protagonist].length - 7, type: "any"}
+                            },
+                            ui: { type: "click_on_own_card_in_hand" }
+                    }]
+                }]
+            };
+
+            G.script.scenes = [...G.script.scenes, newScene];
+        } else {
+            ctx.events?.endTurn!({next: protagonist});
+        }
+
     } else {
-        ctx.events?.endTurn!();
+        if (G.hand[protagonist].length > 7) {
+            const newScene: Scene = {
+                id: _.uniqueId(),
+                mandatory: true,
+                endTurnImmediately: false,
+                actions: [{
+                    type: "action",
+                    instructions: [{
+                        id: _.uniqueId(),
+                            protagonist,
+                            state: "open",
+                            do: {
+                                key: "discard",
+                                info: {count: G.hand[protagonist].length - 7, type: "any"}
+                            },
+                            ui: { type: "click_on_own_card_in_hand" }
+                    }]
+                }]
+            };
+
+            G.script.scenes = [...G.script.scenes, newScene];
+        } else {
+            ctx.events?.endTurn!({next: protagonist});
+        }
+
     }
 }
 

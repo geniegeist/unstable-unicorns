@@ -2,6 +2,6 @@
 exports.__esModule = true;
 exports.CONSTANTS = void 0;
 exports.CONSTANTS = {
-    numberOfHandCardsAtStart: 5,
+    numberOfHandCardsAtStart: 9,
     stableSeats: 7
 };

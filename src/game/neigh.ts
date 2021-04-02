@@ -5,6 +5,7 @@ export interface NeighDiscussion {
     protagonist: PlayerID; 
     cardID: CardID;
     rounds: NeighRound[];
+    target: PlayerID;
 } 
 
 type NeighRound = {

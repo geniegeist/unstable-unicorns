@@ -203,7 +203,8 @@ function playCard(G, ctx, protagonist, cardID) {
             cardID: cardID, protagonist: protagonist, rounds: [{
                     state: "open",
                     playerState: Object.fromEntries(G.players.map(function (pl) { return ([pl.id, { vote: pl.id === protagonist ? "no_neigh" : "undecided" }]); }))
-                }]
+                }],
+            target: protagonist
         };
     }
 }
@@ -219,7 +220,8 @@ function playUpgradeDowngradeCard(G, ctx, protagonist, targetPlayer, cardID) {
             cardID: cardID, protagonist: protagonist, rounds: [{
                     state: "open",
                     playerState: Object.fromEntries(G.players.map(function (pl) { return ([pl.id, { vote: pl.id === protagonist ? "no_neigh" : "undecided" }]); }))
-                }]
+                }],
+            target: targetPlayer
         };
     }
 }
@@ -279,7 +281,7 @@ function dontPlayNeigh(G, ctx, protagonist, roundIndex) {
                 G.discardPile.push(G.neighDiscussion.cardID);
             }
             else {
-                do_1.enter(G, ctx, { playerID: G.neighDiscussion.protagonist, cardID: G.neighDiscussion.cardID });
+                do_1.enter(G, ctx, { playerID: G.neighDiscussion.target, cardID: G.neighDiscussion.cardID });
             }
             G.neighDiscussion = undefined;
         }
@@ -319,10 +321,56 @@ function end(G, ctx, protagonist) {
     var _a, _b;
     if (G.playerEffects[protagonist].find(function (o) { return o.effect.key === "change_of_luck"; })) {
         G.playerEffects[protagonist] = G.playerEffects[protagonist].filter(function (o) { return o.effect.key !== "change_of_luck"; });
-        (_a = ctx.events) === null || _a === void 0 ? void 0 : _a.endTurn({ next: protagonist });
+        if (G.hand[protagonist].length > 7) {
+            var newScene = {
+                id: underscore_1["default"].uniqueId(),
+                mandatory: true,
+                endTurnImmediately: false,
+                actions: [{
+                        type: "action",
+                        instructions: [{
+                                id: underscore_1["default"].uniqueId(),
+                                protagonist: protagonist,
+                                state: "open",
+                                "do": {
+                                    key: "discard",
+                                    info: { count: G.hand[protagonist].length - 7, type: "any" }
+                                },
+                                ui: { type: "click_on_own_card_in_hand" }
+                            }]
+                    }]
+            };
+            G.script.scenes = __spreadArrays(G.script.scenes, [newScene]);
+        }
+        else {
+            (_a = ctx.events) === null || _a === void 0 ? void 0 : _a.endTurn({ next: protagonist });
+        }
     }
     else {
-        (_b = ctx.events) === null || _b === void 0 ? void 0 : _b.endTurn();
+        if (G.hand[protagonist].length > 7) {
+            var newScene = {
+                id: underscore_1["default"].uniqueId(),
+                mandatory: true,
+                endTurnImmediately: false,
+                actions: [{
+                        type: "action",
+                        instructions: [{
+                                id: underscore_1["default"].uniqueId(),
+                                protagonist: protagonist,
+                                state: "open",
+                                "do": {
+                                    key: "discard",
+                                    info: { count: G.hand[protagonist].length - 7, type: "any" }
+                                },
+                                ui: { type: "click_on_own_card_in_hand" }
+                            }]
+                    }]
+            };
+            G.script.scenes = __spreadArrays(G.script.scenes, [newScene]);
+        }
+        else {
+            (_b = ctx.events) === null || _b === void 0 ? void 0 : _b.endTurn({ next: protagonist });
+        }
     }
 }
 function commit(G, ctx, sceneID) {

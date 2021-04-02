@@ -172,7 +172,7 @@ function _transformForCard(idx: number, countCards: number): {x: number, y: numb
         yStep = 5;
     } else {
         degStep = 4;
-        xStep = 90;
+        xStep = -100;
         yStep = 3;
     }
 
