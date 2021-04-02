@@ -1,4 +1,4 @@
 export const CONSTANTS = {
-    numberOfHandCardsAtStart: 9,
+    numberOfHandCardsAtStart: 5,
     stableSeats: 7
 };  
