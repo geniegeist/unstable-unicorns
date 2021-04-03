@@ -228,11 +228,14 @@ function canEnter(G, ctx, param) {
 }
 exports.canEnter = canEnter;
 function executeDo(G, ctx, instructionID, param) {
-    var _a = exports._findInstructionWithID(G, instructionID), scene = _a[0], action = _a[1], instruction = _a[2];
+    var _a;
+    var _b = exports._findInstructionWithID(G, instructionID), scene = _b[0], action = _b[1], instruction = _b[2];
     if (scene.endTurnImmediately) {
         G.mustEndTurnImmediately = true;
     }
     instruction.state = "in_progress";
+    // ui sound
+    G.uiExecuteDo = { id: underscore_1["default"].uniqueId(), cardID: (_a = instruction.ui.info) === null || _a === void 0 ? void 0 : _a.source, "do": instruction["do"] };
     // execute instruction
     if (instruction["do"].key === "destroy") {
         // intervention

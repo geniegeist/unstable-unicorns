@@ -69,7 +69,11 @@ var UnstableUnicorns = {
             clipboard: {},
             endGame: false,
             babyStarter: [],
-            ready: ready
+            ready: ready,
+            uiHoverHandIndex: undefined,
+            uiExecuteDo: undefined,
+            uiCardToCard: undefined,
+            lastNeighResult: undefined
         };
     },
     phases: {
@@ -81,6 +85,7 @@ var UnstableUnicorns = {
             }
         },
         main: {
+            //start: true,
             onBegin: function (G, ctx) {
             }
         }
@@ -136,11 +141,11 @@ var UnstableUnicorns = {
                 moves: { ready: ready, selectBaby: selectBaby, changeName: changeName }
             },
             beginning: {
-                moves: { drawAndAdvance: drawAndAdvance, executeDo: do_2.executeDo, end: end, commit: commit, skipExecuteDo: skipExecuteDo }
+                moves: { drawAndAdvance: drawAndAdvance, executeDo: do_2.executeDo, end: end, commit: commit, skipExecuteDo: skipExecuteDo, setUIHoverHandIndex: setUIHoverHandIndex, setUICardToCard: setUICardToCard }
             },
             action_phase: {
                 moves: {
-                    commit: commit, executeDo: do_2.executeDo, end: end, drawAndEnd: drawAndEnd, playCard: playCard, playUpgradeDowngradeCard: playUpgradeDowngradeCard, playNeigh: playNeigh, playSuperNeigh: playSuperNeigh, dontPlayNeigh: dontPlayNeigh, skipExecuteDo: skipExecuteDo
+                    commit: commit, executeDo: do_2.executeDo, end: end, drawAndEnd: drawAndEnd, playCard: playCard, playUpgradeDowngradeCard: playUpgradeDowngradeCard, playNeigh: playNeigh, playSuperNeigh: playSuperNeigh, dontPlayNeigh: dontPlayNeigh, skipExecuteDo: skipExecuteDo, setUIHoverHandIndex: setUIHoverHandIndex, setUICardToCard: setUICardToCard
                 }
             }
         }
@@ -259,12 +264,14 @@ function playSuperNeigh(G, ctx, cardID, protagonist, roundIndex) {
         // hence neigh the round and add a next round
         round.playerState[protagonist] = { vote: "neigh" };
         round.state = "neigh";
-        var cardWasNeighed = G.neighDiscussion.rounds.length % 2 === 0;
+        var cardWasNeighed = (G.neighDiscussion.rounds.length + 1) % 2 === 0;
         if (cardWasNeighed) {
             G.discardPile.push(G.neighDiscussion.cardID);
+            G.lastNeighResult = { id: underscore_1["default"].uniqueId(), result: "cardWasNeighed" };
         }
         else {
             do_1.enter(G, ctx, { playerID: G.neighDiscussion.protagonist, cardID: G.neighDiscussion.cardID });
+            G.lastNeighResult = { id: underscore_1["default"].uniqueId(), result: "cardWasPlayed" };
         }
         G.neighDiscussion = undefined;
     }
@@ -279,9 +286,11 @@ function dontPlayNeigh(G, ctx, protagonist, roundIndex) {
             var cardWasNeighed = G.neighDiscussion.rounds.length % 2 === 0;
             if (cardWasNeighed) {
                 G.discardPile.push(G.neighDiscussion.cardID);
+                G.lastNeighResult = { id: underscore_1["default"].uniqueId(), result: "cardWasNeighed" };
             }
             else {
                 do_1.enter(G, ctx, { playerID: G.neighDiscussion.target, cardID: G.neighDiscussion.cardID });
+                G.lastNeighResult = { id: underscore_1["default"].uniqueId(), result: "cardWasPlayed" };
             }
             G.neighDiscussion = undefined;
         }
@@ -381,6 +390,20 @@ function skipExecuteDo(G, ctx, protagonist, instructionID) {
         var _a = do_1._findInstructionWithID(G, instructionID), scene = _a[0], action = _a[1], instruction = _a[2];
         console.log("cc");
         action.instructions.filter(function (ins) { return ins.protagonist === protagonist; }).forEach(function (ins) { return ins.state = "executed"; });
+    }
+}
+//
+function setUIHoverHandIndex(G, ctx, index) {
+    if (index === undefined || G.hand[ctx.currentPlayer].length > index) {
+        G.uiHoverHandIndex = index;
+    }
+}
+function setUICardToCard(G, ctx, param) {
+    if (param !== undefined) {
+        G.uiCardToCard = __assign(__assign({}, param), { id: underscore_1["default"].uniqueId() });
+    }
+    else {
+        G.uiCardToCard = undefined;
     }
 }
 exports["default"] = UnstableUnicorns;

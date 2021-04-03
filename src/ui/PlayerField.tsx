@@ -3,23 +3,43 @@ import type { Player, PlayerID } from "../game/player";
 import ImageLoader from '../assets/card/imageLoader';
 import { _typeToColor } from './util';
 import type { Card, CardID } from '../game/card';
-import React, { useState } from 'react';
+import useDynamicRefs from 'use-dynamic-refs';
+import React, { RefObject, useImperativeHandle, useState } from 'react';
 import CardHover from './CardHover';
+import { motion } from 'framer-motion';
+import useSound from 'use-sound';
+const HubMouseOverSound = require('../assets/sound/Hub_Mouseover.ogg').default;
 
 type Props = {
     players: Player[];
-    stable: {[key: string] : Card[]};
+    stable: { [key: string]: Card[] };
     highlightMode?: CardID[];
-    upgradeDowngradeStable: {[key: string] : Card[]};
+    upgradeDowngradeStable: { [key: string]: Card[] };
     currentPlayer: PlayerID;
     handCount: number[];
     onStableCardClick: (cardID: CardID) => void;
+    onStableCardMouseEnter: (cardID: CardID) => void;
+    onStableCardMouseLeave: (cardID: CardID) => void;
     onPlayerClick: (playerID: PlayerID) => void;
     onHandClick: (playerID: PlayerID) => void;
 }
 
-const PlayerField = (props: Props) => {
+export type PlayerFieldHandle = {
+    getStableItemRef: (cardID: CardID) => RefObject<HTMLDivElement>; 
+}
+
+const PlayerField = React.forwardRef<PlayerFieldHandle, Props>((props, ref) => {
+    const [getItemRefs, setItemRefs] = useDynamicRefs();
     const [showHover, setShowHover] = useState<undefined | CardID>(undefined);
+    const [playHubMouseOverSound] = useSound(HubMouseOverSound, {
+        volume: 0.2,
+    });
+
+    useImperativeHandle(ref, () => ({
+        getStableItemRef: (cardID: CardID) => {
+            return getItemRefs(`${cardID}`) as any;
+        }
+    }));
 
     return (
         <Wrapper>
@@ -31,10 +51,10 @@ const PlayerField = (props: Props) => {
                                 <div>
                                     {pl.name}
                                 </div>
-                                <div style={{position: "absolute", right: "0.6em", backgroundColor: "rgba(255,255,255,0.2)", width: "23px", height: "30px", borderRadius: "4px", transform: "rotate(14deg) translate(3px,0)"}}>
+                                <div style={{ position: "absolute", right: "0.6em", backgroundColor: "rgba(255,255,255,0.2)", width: "23px", height: "30px", borderRadius: "4px", transform: "rotate(14deg) translate(3px,0)" }}>
 
                                 </div>
-                                <div style={{position: "absolute", right: "0.6em", backgroundColor: "rgba(255,255,255,0.1)", width: "23px", height: "30px", borderRadius: "4px", transform: "rotate(23deg) translate(6px,0)"}}>
+                                <div style={{ position: "absolute", right: "0.6em", backgroundColor: "rgba(255,255,255,0.1)", width: "23px", height: "30px", borderRadius: "4px", transform: "rotate(23deg) translate(6px,0)" }}>
 
                                 </div>
                                 <CardCounter onClick={() => props.onHandClick(pl.id)}>
@@ -44,37 +64,59 @@ const PlayerField = (props: Props) => {
                             <UpgradeDowngradeStable>
                                 {props.upgradeDowngradeStable[pl.id].map(c => {
                                     return (
-                                        <UpgradeDowngradeImage key={c.id} isTranslucent={props.highlightMode ? !props.highlightMode.includes(c.id) : false} image={ImageLoader.load(c.image)} onClick={() => props.onStableCardClick(c.id)} />
+                                        <div 
+                                            key={c.id}
+                                            ref={setItemRefs(`${c.id}`) as any} 
+                                            style={{ position: "relative" }} onMouseEnter={() => {
+                                                playHubMouseOverSound();
+                                                setShowHover(c.id);
+                                            }}
+                                            onMouseLeave={() => {
+                                                setShowHover(undefined);
+                                            }}>
+                                            <UpgradeDowngradeImage key={c.id} isTranslucent={props.highlightMode ? !props.highlightMode.includes(c.id) : false} image={ImageLoader.load(c.image)} onClick={() => props.onStableCardClick(c.id)} />
+                                            {showHover === c.id &&
+                                                <CardHover title={c.title} position={"top"} offset={{ x: 40, y: 0 }} color={_typeToColor(c.type)} text={c.description} />
+                                            }
+                                        </div>
                                     );
                                 })}
                             </UpgradeDowngradeStable>
                             <Stable>
                                 {props.stable[pl.id].map(c => {
                                     return (
-                                        <div style={{position: "relative"}} onMouseEnter={() => {
-                                            setShowHover(c.id);
-                                        }} 
-                                        onMouseLeave={() => {
-                                            setShowHover(undefined);
-                                        }}>
-                                        <UnicornImage key={c.id} isTranslucent={props.highlightMode ? !props.highlightMode.includes(c.id) : false} image={ImageLoader.load(c.image)} onClick={() => props.onStableCardClick(c.id)} />
-                                        {showHover === c.id &&
-                                            <CardHover position={"bottom"} offset={{x: 60, y: 0}} color={_typeToColor(c.type)} text={c.description}/>
-                                        }
+                                        <div 
+                                            key={c.id} 
+                                            ref={setItemRefs(`${c.id}`) as any} 
+                                            style={{ position: "relative" }} 
+                                            onMouseEnter={() => {
+                                                playHubMouseOverSound();
+                                                setShowHover(c.id);
+                                            }}
+                                            onMouseLeave={() => {
+                                                setShowHover(undefined);
+                                            }}>
+                                            <UnicornImage layoutId={`${c.id}`}isTranslucent={props.highlightMode ? !props.highlightMode.includes(c.id) : false} image={ImageLoader.load(c.image)} onClick={() => props.onStableCardClick(c.id)} 
+                                                onMouseEnter={() => props.onStableCardMouseEnter(c.id)}
+                                                onMouseLeave={() => props.onStableCardMouseLeave(c.id)}
+                                            />
+                                            {showHover === c.id &&
+                                                <CardHover title={c.title} position={"top"} offset={{ x: 64, y: 0 }} color={_typeToColor(c.type)} text={c.description} />
+                                            }
                                         </div>
                                     );
                                 })}
                                 {props.stable[pl.id].length === 0 &&
-                                    <p style={{opacity: 0.7}}>Stable is empty</p>
+                                    <p style={{ opacity: 0.7 }}>Stable is empty</p>
                                 }
                             </Stable>
-                        </InnerBox>      
+                        </InnerBox>
                     </PlayerBox>
                 );
             })}
         </Wrapper>
     );
-}
+});
 
 const Wrapper = styled.div`
     display: flex;
@@ -82,10 +124,10 @@ const Wrapper = styled.div`
     justify-content: center;
 `;
 
-const PlayerBox = styled.div<{current: boolean}>`
+const PlayerBox = styled.div<{ current: boolean }>`
     width: 180px;
     height: 220px;
-    background-color: ${props => props.current? "rgba(0,0,0,0.5)" : "rgba(0,0,0,0)"};
+    background-color: ${props => props.current ? "rgba(0,0,0,0.5)" : "rgba(0,0,0,0)"};
     border-radius: 16px;
     margin: 0.6em;
     padding: 0.5em;
@@ -121,7 +163,7 @@ const UpgradeDowngradeStable = styled.div`
     margin: 0.5em 0.5em;
 `;
 
-const UpgradeDowngradeImage = styled.img<{image: string, isTranslucent: boolean}>`
+const UpgradeDowngradeImage = styled.img<{ image: string, isTranslucent: boolean }>`
     background-image: url(${props => props.image});
     background-size: cover;
     width: 30px;
@@ -141,7 +183,7 @@ const Stable = styled.div`
     position: relative;
 `;
 
-const UnicornImage = styled.div<{image: string, isTranslucent: boolean}>`
+const UnicornImage = styled(motion.div)<{ image: string, isTranslucent: boolean }>`
     background-image: url(${props => props.image});
     background-size: cover;
     min-width: 50px;

@@ -30,6 +30,16 @@ export interface UnstableUnicornsGame extends Game {
     endGame: boolean;
     babyStarter: { cardID: CardID, owner: PlayerID }[];
     ready: { [key: string]: boolean };
+    uiHoverHandIndex: number | undefined;
+    uiExecuteDo: {id: string, cardID: CardID | undefined, do: Do} | undefined;
+    uiCardToCard: {
+        protagonist: PlayerID,
+        sourceCardID: CardID,
+        instructionID: string,
+        targetCardID: CardID,
+        id: string,
+    } | undefined;
+    lastNeighResult: {id: string, result: "cardWasPlayed" | "cardWasNeighed"} | undefined;
 }
 
 interface Script {
@@ -117,7 +127,11 @@ const UnstableUnicorns = {
             clipboard: {},
             endGame: false,
             babyStarter: [],
-            ready
+            ready,
+            uiHoverHandIndex: undefined,
+            uiExecuteDo: undefined,
+            uiCardToCard: undefined,
+            lastNeighResult: undefined,
         };
     },
     phases: {
@@ -128,6 +142,7 @@ const UnstableUnicorns = {
             }
         },
         main: {
+            //start: true,
             onBegin: (G: UnstableUnicornsGame, ctx: Ctx) => {
 
             }
@@ -187,11 +202,11 @@ const UnstableUnicorns = {
                 moves: { ready, selectBaby, changeName }
             },
             beginning: {
-                moves: { drawAndAdvance, executeDo, end, commit, skipExecuteDo }
+                moves: { drawAndAdvance, executeDo, end, commit, skipExecuteDo, setUIHoverHandIndex, setUICardToCard }
             },
             action_phase: {
                 moves: {
-                    commit, executeDo, end, drawAndEnd, playCard, playUpgradeDowngradeCard, playNeigh, playSuperNeigh, dontPlayNeigh, skipExecuteDo
+                    commit, executeDo, end, drawAndEnd, playCard, playUpgradeDowngradeCard, playNeigh, playSuperNeigh, dontPlayNeigh, skipExecuteDo, setUIHoverHandIndex, setUICardToCard
                 }
             }
         }
@@ -280,7 +295,7 @@ function playUpgradeDowngradeCard(G: UnstableUnicornsGame, ctx: Ctx, protagonist
                 state: "open",
                 playerState: Object.fromEntries(G.players.map(pl => ([pl.id, { vote: pl.id === protagonist ? "no_neigh" : "undecided" }]))),
             }],
-            target: targetPlayer
+            target: targetPlayer,
         };
     }
 }
@@ -326,8 +341,10 @@ function playSuperNeigh(G: UnstableUnicornsGame, ctx: Ctx, cardID: CardID, prota
         const cardWasNeighed = (G.neighDiscussion.rounds.length+1) % 2 === 0;
         if (cardWasNeighed) {
             G.discardPile.push(G.neighDiscussion.cardID);
+            G.lastNeighResult = {id: _.uniqueId(), result: "cardWasNeighed"};
         } else {
             enter(G, ctx, { playerID: G.neighDiscussion.protagonist, cardID: G.neighDiscussion.cardID })
+            G.lastNeighResult = {id: _.uniqueId(), result: "cardWasPlayed"};
         }
         G.neighDiscussion = undefined;
     }
@@ -344,8 +361,10 @@ function dontPlayNeigh(G: UnstableUnicornsGame, ctx: Ctx, protagonist: PlayerID,
             const cardWasNeighed = G.neighDiscussion.rounds.length % 2 === 0;
             if (cardWasNeighed) {
                 G.discardPile.push(G.neighDiscussion.cardID);
+                G.lastNeighResult = {id: _.uniqueId(), result: "cardWasNeighed"};
             } else {
                 enter(G, ctx, { playerID: G.neighDiscussion.target, cardID: G.neighDiscussion.cardID })
+                G.lastNeighResult = {id: _.uniqueId(), result: "cardWasPlayed"};
             }
             G.neighDiscussion = undefined;
         }
@@ -452,6 +471,22 @@ function skipExecuteDo(G: UnstableUnicornsGame, ctx: Ctx, protagonist: PlayerID,
         const [scene, action, instruction] = _findInstructionWithID(G, instructionID)!;
         console.log("cc")
         action.instructions.filter((ins) => ins.protagonist === protagonist).forEach((ins) => ins.state = "executed");
+    }
+}
+
+//
+
+function setUIHoverHandIndex(G: UnstableUnicornsGame, ctx: Ctx, index: number | undefined) {
+    if (index === undefined || G.hand[ctx.currentPlayer].length > index) {
+        G.uiHoverHandIndex = index;
+    }
+}
+
+function setUICardToCard(G: UnstableUnicornsGame, ctx: Ctx, param: {protagonist: PlayerID, sourceCardID: CardID, instructionID: string, targetCardID: CardID} | undefined) {
+    if (param !== undefined) {
+        G.uiCardToCard = {...param, id: _.uniqueId()};
+    } else {
+        G.uiCardToCard = undefined;
     }
 }
 

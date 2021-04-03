@@ -3,7 +3,9 @@ import _ from 'underscore';
 import Hand from './ui/Hand';
 import HiddenHand from './ui/HiddenHand';
 import Stable, { StableHandle } from './ui/Stable';
-import PlayerField from './ui/PlayerField';
+import PlayerField, { PlayerFieldHandle } from './ui/PlayerField';
+import useSound from 'use-sound';
+import { motion, AnimateSharedLayout, AnimatePresence } from "framer-motion";
 // game
 import { UnstableUnicornsGame, Ctx, _findOpenScenesWithProtagonist, Instruction, Scene, canDraw, canPlayCard, _findInProgressScenesWithProtagonist, _findInstruction } from './game/game';
 // assets
@@ -13,7 +15,7 @@ import DrawPile from './ui/DrawPile';
 import Nursery from './ui/Nursery';
 import DiscardPile from './ui/DiscardPile';
 import { CardID } from './game/card';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { findUITargets, HoverTarget } from './BoardUtil';
 import RainbowArrow from './ui/RainbowArrow';
 import EndTurnButton from './ui/button/EndTurnButton';
@@ -26,6 +28,19 @@ import { AddFromDiscardPileToHandTarget, BringToStableTarget, DiscardTarget, DoD
 import InfoLabel from './ui/InfoLabel';
 import Finder from './ui/Finder';
 import BoardGameBegin from './BoardGameBegin';
+
+const YourTurnSound = require('./assets/sound/ALERT_YourTurn_0v2.ogg').default;
+const DrawCardSound = require('./assets/sound/draw_card_and_add_to_hand_1.ogg').default;
+const NeighSuccessSound = require('./assets/sound/tavern_crowd_play_reaction_very_positive_5.ogg').default;
+const NeighFailureSound = require('./assets/sound/tavern_crowd_play_reaction_quite_positive_2.ogg').default;
+const EndTurnButtonSound = require('./assets/sound/bar_button_A_press.ogg').default;
+const HubMouseOverSound = require('./assets/sound/Hub_Mouseover.ogg').default;
+const FriendlyChallengeSound = require('./assets/sound/friendly_challenge.ogg').default;
+const DestroyedSound = require('./assets/sound/Arrow_Targeted_Explode_01.ogg').default;
+const DiscardSound = require('./assets/sound/play_card_from_hand_1.ogg').default;
+const SacrificeSound = require('./assets/sound/FeignDeath_trigger_1.ogg').default;
+const StealSound = require('./assets/sound/stealth_on.ogg').default;
+
 
 type Props = {
     G: UnstableUnicornsGame;
@@ -71,14 +86,101 @@ type CardInteraction = {
 const Board = (props: any) => {
     const { G, ctx, playerID, moves } = props as Props;
 
+    const [playYourTurnAlert] = useSound(YourTurnSound, {
+        volume: 0.3,
+    });
+
+    const [playDrawCardSound] = useSound(DrawCardSound, {
+        volume: 0.3,
+    });
+
+    const [playNeighSuccessSound] = useSound(NeighSuccessSound, {
+        volume: 0.2,
+    });
+
+    const [playNeighFailureSound] = useSound(NeighFailureSound, {
+        volume: 0.2,
+    });
+
+    const [playEndTurnButtonSound] = useSound(EndTurnButtonSound, {
+        volume: 0.2,
+    });
+
+    const [playHubMouseOverSound] = useSound(HubMouseOverSound, {
+        volume: 0.2,
+    });
+
+    const [playFriendlyChallengeSound] = useSound(FriendlyChallengeSound, {
+        volume: 0.2,
+    });
+
+    const [playDestroyedSound] = useSound(DestroyedSound, {
+        volume: 0.2,
+    });
+
+    const [playDiscardSound] = useSound(DiscardSound, {
+        volume: 0.2,
+    });
+
+    const [playSacrificeSound] = useSound(SacrificeSound, {
+        volume: 0.2,
+    });
+
+    const [playStealSound] = useSound(StealSound, {
+        volume: 0.2,
+    });
+
+    useEffect(() => {
+        if (ctx.currentPlayer === playerID) {
+            playYourTurnAlert();
+        }
+    }, [ctx.currentPlayer]);
+
+    useEffect(() => {
+        if (G.lastNeighResult) {
+            if (G.lastNeighResult.result === "cardWasPlayed") {
+                playNeighSuccessSound();
+            } else {
+                playNeighFailureSound();
+            }
+        }
+    }, [G.lastNeighResult?.id]);
+
+    useEffect(() => {
+        if (G.neighDiscussion?.rounds.length !== undefined && G.neighDiscussion?.rounds.length > 0) {
+            playFriendlyChallengeSound();
+        }
+    }, [G.neighDiscussion?.rounds.length])
+
+    useEffect(() => {
+        if (G.uiExecuteDo) {
+            if (G.uiExecuteDo.do.key === "destroy") {
+                playDestroyedSound();
+            }
+
+            if (G.uiExecuteDo.do.key === "sacrifice") {
+                playSacrificeSound();
+            }
+
+            if (G.uiExecuteDo.do.key === "discard") {
+                playDiscardSound();
+            }
+
+            if (G.uiExecuteDo.do.key === "steal") {
+                playStealSound();
+            }
+        }
+    }, [G.uiExecuteDo?.id]);
+
     const [showDeckFinder, setShowDeckFinder] = useState<SearchTarget[] | undefined>(undefined);
     const [showPlayerHand, setShowPlayerHand] = useState<PlayerID | undefined>(undefined);
     const [showBlatantThievery, setShowBlatantThievery] = useState<PlayerID | undefined>(undefined);
-    const [showDiscardFinder, setShowDiscardFinder] = useState<{cardID: CardID}[] | undefined>(undefined);
+    const [showDiscardFinder, setShowDiscardFinder] = useState<{ cardID: CardID }[] | undefined>(undefined);
     const [showNurseryFinder, setSHowNurseryFinder] = useState(false);
     const [isHoveringOverHandCard, setHoveringOverHandCard] = useState(false);
     const stableRef = useRef<StableHandle>(null);
-    const [hoverTargets, setHoverTargets] = useState<{sourceCardID: CardID, targets: HoverTarget[]}>();
+    const playerFieldRef = useRef<PlayerFieldHandle>(null);
+    const [hoverTargets, setHoverTargets] = useState<{ sourceCardID: CardID, targets: HoverTarget[] }>();
     const [cardInteraction, setCardInteraction] = useState<CardInteraction | undefined>(undefined);
 
     let openScenes: Array<[Instruction, Scene]> = _findInProgressScenesWithProtagonist(G, playerID);
@@ -93,8 +195,8 @@ const Board = (props: any) => {
             setCardInteraction({
                 key: "card_to_card",
                 info: {
-                    ...cardInteraction.info, 
-                    currentMousePosition: { x: evt.clientX, y: evt.clientY } 
+                    ...cardInteraction.info,
+                    currentMousePosition: { x: evt.clientX, y: evt.clientY }
                 }
             });
         }
@@ -103,8 +205,8 @@ const Board = (props: any) => {
             setCardInteraction({
                 key: "card_to_player",
                 info: {
-                    ...cardInteraction.info, 
-                    currentMousePosition: { x: evt.clientX, y: evt.clientY } 
+                    ...cardInteraction.info,
+                    currentMousePosition: { x: evt.clientX, y: evt.clientY }
                 }
             });
         }
@@ -113,8 +215,8 @@ const Board = (props: any) => {
             setCardInteraction({
                 key: "play_upgradeDowngradeCardFromHand__choose_target",
                 info: {
-                    ...cardInteraction.info, 
-                    currentMousePosition: { x: evt.clientX, y: evt.clientY } 
+                    ...cardInteraction.info,
+                    currentMousePosition: { x: evt.clientX, y: evt.clientY }
                 }
             });
         }
@@ -128,12 +230,55 @@ const Board = (props: any) => {
         // only update if the card interaction is different 
         // prevents the client from rendering indefinitely
         if (cardInteraction?.info?.instructionID !== boardState.info!.instructionID) {
-            setCardInteraction({ key: "click_on_other_stable_card", info: {
-                targets: boardState.info!.targets,
-                instructionID: boardState.info!.instructionID,
-            } });
+            setCardInteraction({
+                key: "click_on_other_stable_card", info: {
+                    targets: boardState.info!.targets,
+                    instructionID: boardState.info!.instructionID,
+                }
+            });
         }
-    } 
+    }
+
+    // Card to Card Hover Interaction Online
+    const [C2CArrow, setC2CArrow] = useState<{ fromX: number, fromY: number, toX: number, toY: number } | undefined>(undefined);
+
+    useEffect(() => {
+        if (G.uiCardToCard?.protagonist === playerID) {
+            return;
+        }
+
+        if (G.uiCardToCard !== undefined && G.uiCardToCard.sourceCardID && G.uiCardToCard.targetCardID) {
+            if (playerFieldRef.current && stableRef.current) {
+                const refSource = playerFieldRef.current.getStableItemRef(G.uiCardToCard.sourceCardID);
+                let targetSource;
+                if (G.stable[playerID].find(i => i === G.uiCardToCard!.targetCardID)) {
+                    targetSource = stableRef.current.getStableItemRef(G.uiCardToCard.targetCardID);
+                } else {
+                    targetSource = playerFieldRef.current.getStableItemRef(G.uiCardToCard.targetCardID);
+                }
+
+                if (targetSource?.current && refSource?.current) {
+                    const coord = refSource.current!.getBoundingClientRect()!;
+                    const from = {
+                        x: coord.left + coord.width / 2.0,
+                        y: coord.top + coord.height / 2.0,
+                    };
+                    const coord2 = targetSource.current!.getBoundingClientRect()!;
+                    const to = {
+                        x: coord2.left + coord2.width / 2.0,
+                        y: coord2.top + coord2.height / 2.0,
+                    };
+
+
+                    setC2CArrow({
+                        fromX: from.x, fromY: from.y, toX: to.x, toY: to.y
+                    });
+                }
+            }
+        }  else {
+            setC2CArrow(undefined);
+        }
+    }, [G.uiCardToCard?.id]);
 
     if (ctx.phase === "pregame") {
         return (
@@ -142,239 +287,110 @@ const Board = (props: any) => {
     }
 
     return (
-        <Wrapper onMouseMove={wrapperOnMouseMove}>
-            <div style={{position: "absolute", right: 0, color: "rgba(0,0,0,0)", height: "20px", width: "20px"}} onClick={() => {
-                moves.end(playerID);
-                /*
-                console.log("Huhu")
-                boardStates.forEach(b => {
-                    if (b.info?.instructionID) {
-                        const [instruction, action, scene] = _findInstruction(G, b?.info?.instructionID)!;
-                        moves.commit(scene.id);
-                    }
-                })*/
-            }}>
-                A
+        <AnimateSharedLayout>
+            <Wrapper layout onMouseMove={wrapperOnMouseMove}>
+                <div style={{ position: "absolute", right: 0, color: "rgba(0,0,0,0)", height: "20px", width: "20px" }} onClick={() => {
+                    moves.end(playerID);
+                    /*
+                    console.log("Huhu")
+                    boardStates.forEach(b => {
+                        if (b.info?.instructionID) {
+                            const [instruction, action, scene] = _findInstruction(G, b?.info?.instructionID)!;
+                            moves.commit(scene.id);
+                        }
+                    })*/
+                }}>
+                    A
             </div>
-            <div style={{position: "absolute", top: 0, left: 0, color: "rgba(0,0,0,0)", height: "20px", width: "20px"}} onClick={() => {
-                console.log("Huhu")
-                boardStates.forEach(b => {
-                    console.log(b);
-                    if (b.info?.instructionID) {
-                        console.log("DO")
-                        moves.skipExecuteDo(playerID, b.info?.instructionID);
-                    }
-                })
-            }}>
-                A
+                <div style={{ position: "absolute", top: 0, left: 0, color: "rgba(0,0,0,0)", height: "20px", width: "20px" }} onClick={() => {
+                    boardStates.forEach(b => {
+                        if (b.info?.instructionID) {
+                            console.log("DO")
+                            moves.skipExecuteDo(playerID, b.info?.instructionID);
+                        }
+                    })
+                }}>
+                    A
             </div>
+                {showDeckFinder &&
+                    <Finder
+                        cards={showDeckFinder.map(s => G.deck[s.cardID])}
+                        showBackButton={false}
+                        onBackClick={() => 0}
+                        onCardClick={cardID => {
+                            const boardState = boardStates.find(o => o.type === "search__single_action_popup")!;
+                            const [instruction, action, scene] = _findInstruction(G, boardState.info?.instructionID)!;
+                            moves.executeDo(instruction.id, {
+                                protagonist: playerID,
+                                cardID
+                            });
+                            setShowDeckFinder(undefined);
+                            setCardInteraction(undefined);
+                        }} />
+                }
+                {showDiscardFinder &&
+                    <Finder
+                        cards={showDiscardFinder.map(c => G.deck[c.cardID])}
+                        onBackClick={() => setShowDiscardFinder(undefined)}
+                        onCardClick={cardID => {
+                            let state = boardStates.find(s => s.type === "revive" || s.type === "addFromDiscardPileToHand__single_action_popup");
+                            if (state) {
+                                moves.executeDo(state.info?.instructionID, {
+                                    protagonist: playerID, cardID
+                                });
 
-            {showDeckFinder && 
-                <Finder 
-                    cards={showDeckFinder.map(s => G.deck[s.cardID])} 
-                    showBackButton={false}
-                    onBackClick={() => 0} 
-                    onCardClick={cardID => {
-                        const boardState = boardStates.find(o => o.type === "search__single_action_popup")!;
-                        const [instruction, action, scene] = _findInstruction(G, boardState.info?.instructionID)!;
-                        moves.executeDo(instruction.id, {
-                            protagonist: playerID,
-                            cardID
-                        });
-                        setShowDeckFinder(undefined);
-                        setCardInteraction(undefined);
-                }} />
-            }
-            {showDiscardFinder && 
-                <Finder 
-                    cards={showDiscardFinder.map(c => G.deck[c.cardID])} 
-                    onBackClick={() => setShowDiscardFinder(undefined)} 
-                    onCardClick={cardID => {
-                        let state = boardStates.find(s => s.type === "revive" || s.type === "addFromDiscardPileToHand__single_action_popup");
+                                setShowDiscardFinder(undefined);
+                            }
+                        }} />
+                }
+                {showNurseryFinder &&
+                    <Finder cards={G.nursery.map(c => G.deck[c])} onBackClick={() => setSHowNurseryFinder(false)} onCardClick={cardID => {
+                        let state = boardStates.find(s => s.type === "reviveFromNursery");
                         if (state) {
                             moves.executeDo(state.info?.instructionID, {
                                 protagonist: playerID, cardID
                             });
 
-                            setShowDiscardFinder(undefined);
+                            setSHowNurseryFinder(false);
                         }
-                }} />
-            }
-            {showNurseryFinder && 
-                <Finder cards={G.nursery.map(c => G.deck[c])} onBackClick={() => setSHowNurseryFinder(false)} onCardClick={cardID => {
-                    let state = boardStates.find(s => s.type === "reviveFromNursery");
-                    if (state) {
-                        moves.executeDo(state.info?.instructionID, {
-                            protagonist: playerID, cardID
-                        });
+                    }} />
+                }
+                {showPlayerHand !== undefined &&
+                    <Finder cards={G.hand[showPlayerHand].map(c => G.deck[c])} onBackClick={() => setShowPlayerHand(undefined)} showBackButton={true} onCardClick={cardID => {
 
-                        setSHowNurseryFinder(false);
-                    }
-                }}/>
-            }
-            {showPlayerHand !== undefined && 
-                <Finder cards={G.hand[showPlayerHand].map(c => G.deck[c])} onBackClick={() => setShowPlayerHand(undefined)} showBackButton={true} onCardClick={cardID => {
-                    
-                }} hide={G.playerEffects[showPlayerHand].find(o => o.effect.key === "your_hand_is_visible") === undefined} />
-            }
-            {showBlatantThievery !== undefined && 
-                <Finder cards={G.hand[showBlatantThievery].map(c => G.deck[c])} onBackClick={() => undefined} showBackButton={false} onCardClick={cardID => {
-                    const handIndex = G.hand[showBlatantThievery].findIndex(s => s === cardID);
-                    moves.executeDo(cardInteraction?.info.instructionID, { protagonist: playerID, handIndex, from: showBlatantThievery});
-                    setShowBlatantThievery(undefined);
-                    setCardInteraction(undefined);
-                }}
-                title="Click on card to add it to your hand."/>
-            }
-            {(cardInteraction?.key === "card_to_card" || cardInteraction?.key === "card_to_player" || cardInteraction?.key === "play_upgradeDowngradeCardFromHand__choose_target") &&
-                <RainbowArrow from={{ x: cardInteraction.info.startingMousePosition.x, y: cardInteraction.info.startingMousePosition.y }} to={{ x: cardInteraction.info.currentMousePosition.x, y: cardInteraction.info.currentMousePosition.y }} />
-            }
-            <Top>
-                {renderTop(G, ctx, ctx.currentPlayer === playerID, boardStates)}
-            </Top>
-            <Main>
-                <PlayerField
-                    players={G.players.filter(pl => pl.id !== playerID)}
-                    currentPlayer={ctx.currentPlayer}
-                    stable={_.mapObject(G.stable, c => c.map(d => G.deck[d]))}
-                    handCount={G.players.map(pl => G.hand[pl.id].length)}
-                    upgradeDowngradeStable={_.mapObject(G.upgradeDowngradeStable, c => c.map(d => G.deck[d]))}
-                    highlightMode={stableHighlightMode}
-                    onHandClick={playerID => setShowPlayerHand(playerID)}
-                    onStableCardClick={cardID => {
-                        if (cardInteraction?.key === "click_on_other_stable_card" || cardInteraction?.key === "card_to_card") {
-                            console.log("Detected click for cardInteraction with key <click_on_other_stable_card | card_to_card>");
-                            // is clicked card a valid target?
-                            if (cardInteraction.info.targets.find(s => s.cardID === cardID)) {
-                                console.log(`Clicked card is a valid target. Execute instruction with id <${cardInteraction.info.instructionID}>`);
-                                moves.executeDo(cardInteraction.info.instructionID, {
-                                    protagonist: playerID, cardID
-                                });
-                                setCardInteraction(undefined);
-                            }
-                        }
+                    }} hide={G.playerEffects[showPlayerHand].find(o => o.effect.key === "your_hand_is_visible") === undefined} />
+                }
+                {showBlatantThievery !== undefined &&
+                    <Finder cards={G.hand[showBlatantThievery].map(c => G.deck[c])} onBackClick={() => undefined} showBackButton={false} onCardClick={cardID => {
+                        const handIndex = G.hand[showBlatantThievery].findIndex(s => s === cardID);
+                        moves.executeDo(cardInteraction?.info.instructionID, { protagonist: playerID, handIndex, from: showBlatantThievery });
+                        setShowBlatantThievery(undefined);
+                        setCardInteraction(undefined);
                     }}
-                    onPlayerClick={plid => {
-                        if (cardInteraction?.key === "card_to_player") {
-                            console.log("Detected click for cardInteraction with key <card_to_player>");
-
-                            if (G.deck[cardInteraction.info.sourceCardID].title === "Blatant Thievery") {
-                                setShowBlatantThievery(plid);
-                                return;
-                            }   
-
-                            // is clicked card a valid target?
-                            if (cardInteraction.info.targets.find(s => s.playerID === plid)) {
-                                console.log(`Clicked player is a valid target. Execute instruction with id <${cardInteraction.info.instructionID}>`);
-                                moves.executeDo(cardInteraction.info.instructionID, {
-                                    protagonist: playerID, playerID: plid
-                                });
-                                setCardInteraction(undefined);
-                            }
-                        } else if (cardInteraction?.key === "play_upgradeDowngradeCardFromHand__choose_target") {
-                            moves.playUpgradeDowngradeCard(playerID, plid, cardInteraction.info.cardID);
-                            setCardInteraction(undefined);
-                        }
-                    }}
-                />
-            </Main>
-            <Middle>
-                <DrawPileWrapper zIndexFocus={isHoveringOverHandCard}>
-                    {renderEndTurnButton(moves, playerID, boardStates)}
-                    <MiddleLabel>Deck</MiddleLabel>
-                    <DrawPile onClick={() => {
-                        if (boardStates.find(s => s.type === "drawCard")) {
-                            if (ctx.activePlayers![playerID] === "beginning") {
-                                moves.drawAndAdvance();
-                            } else if (ctx.activePlayers![playerID] === "action_phase") {
-                                moves.drawAndEnd(playerID);
-                            }
-                        } else if (boardStates.find(s => s.type === "draw__clickOnDrawPile")) {
-                            const boardState = boardStates.find(s => s.type === "draw__clickOnDrawPile")!;
-                            moves.executeDo(boardState.info!.instructionID, {
-                                protagonist: playerID, count: boardState.info!.count
-                            });
-                        }
-                    }} isGlowing={boardStates.find(s => s.type === "drawCard" || s.type === "draw__clickOnDrawPile") !== undefined} count={G.drawPile.length} />
-                </DrawPileWrapper>
-                {renderNeighLabel(G, ctx, moves, playerID)}
-                {renderInfoLabel(G, boardStates)}
-                <MiddleLeftWrapper zIndexFocus={isHoveringOverHandCard}>
-                    <div>
-                        <MiddleLabel>Nursery</MiddleLabel>
-                        <Nursery cards={G.nursery.map(c => G.deck[c])} onClick={()=> {
-                            setSHowNurseryFinder(true);
-                        }}/>
-                    </div>
-                    <div style={{ marginTop: "1em" }}>
-                        <MiddleLabel>Discard pile</MiddleLabel>
-                        <DiscardPile cards={G.discardPile.map(c => G.deck[c])} onClick={() => {
-                            setShowDiscardFinder(G.discardPile.map(c => ({cardID: c})));
-                        }} />
-                    </div>
-                </MiddleLeftWrapper>
-            </Middle>
-            <Bottom>
-                <Stable
-                    ref={stableRef}
-                    cards={[...G.stable[playerID], ...G.temporaryStable[playerID]].map(c => G.deck[c])}
-                    upgradeDowngradeCards={G.upgradeDowngradeStable[playerID].map(c => G.deck[c])}
-                    glowing={glowingCardIDs}
-                    highlightMode={stableHighlightMode}
-                    onStableItemClick={(evt, cardID) => {
-                        // initiate card to card interaction for destroy and steal actions
-                        if (cardInteraction === undefined) {
-                            // check if it is a destroy or steal action
-                            // check if the card that is clicked is the source for the action
-                            let boardState = _.first(boardStates.filter(s => s.info?.sourceCardID === cardID && (s.type === "destroy__cardToCard" || s.type === "steal__cardToCard" || s.type === "sacrifice__cardToCard" ||s.type === "move__cardToCard" || s.type === "returnToHand__cardToCard" || s.type === "backKick__card_to_card" || s.type === "unicornswap1")));
-
-                            if (boardState) {
-                                const cardRef = stableRef.current?.getStableItemRef(cardID)!;
-                                const coord = cardRef.current!.getBoundingClientRect();
-                                const from = {
-                                    x: coord.left + coord.width / 2.0,
-                                    y: coord.top + coord.height / 2.0,
-                                };
-                                setCardInteraction({
-                                    key: "card_to_card",
-                                    info: {
-                                        sourceCardID: cardID,
-                                        instructionID: boardState.info!.instructionID,
-                                        targets: boardState.info!.targets,
-                                        currentMousePosition: {x: evt.clientX, y: evt.clientY},
-                                        startingMousePosition: {...from}
-                                    }
-                                });
-                            }
-
-                            boardState = _.first(boardStates.filter(s => (s.type === "swapHands__cardToPlayer" || s.type === "pullRandom__cardToPlayer" || s.type === "move2__cardToPlayer" || s.type === "makeSomeoneDiscard__cardToPlayer" || s.type === "unicornswap2" || s.type === "blatantThievery1") && s.info?.sourceCardID === cardID));
-                            if (boardState) {
-                                const cardRef = stableRef.current?.getStableItemRef(cardID)!;
-                                const coord = cardRef.current!.getBoundingClientRect();
-                                const from = {
-                                    x: coord.left + coord.width / 2.0,
-                                    y: coord.top + coord.height / 2.0,
-                                };
-                                setCardInteraction({
-                                    key: "card_to_player",
-                                    info: {
-                                        sourceCardID: cardID,
-                                        instructionID: boardState.info!.instructionID,
-                                        targets: boardState.info!.targets,
-                                        currentMousePosition: {x: evt.clientX, y: evt.clientY},
-                                        startingMousePosition: {...from}
-                                    }
-                                });
-                            }
-                        } else {
-                            // cancel card interaction 
-                            if ((cardInteraction.key === "card_to_card" || cardInteraction.key === "card_to_player") && cardInteraction.info.sourceCardID === cardID) {
-                                setCardInteraction(undefined);
-                                return;
-                            }      
-                            
+                        title="Click on card to add it to your hand." />
+                }
+                {(cardInteraction?.key === "card_to_card" || cardInteraction?.key === "card_to_player" || cardInteraction?.key === "play_upgradeDowngradeCardFromHand__choose_target") &&
+                    <RainbowArrow from={{ x: cardInteraction.info.startingMousePosition.x, y: cardInteraction.info.startingMousePosition.y }} to={{ x: cardInteraction.info.currentMousePosition.x, y: cardInteraction.info.currentMousePosition.y }} />
+                }
+                {C2CArrow !== undefined &&
+                    <RainbowArrow from={{ x: C2CArrow!.fromX, y: C2CArrow!.fromY }} to={{ x: C2CArrow!.toX, y: C2CArrow!.toY }} />
+                }
+                <Top>
+                    {renderTop(G, ctx, ctx.currentPlayer === playerID, boardStates)}
+                </Top>
+                <Main>
+                    <PlayerField
+                        ref={playerFieldRef}
+                        players={G.players.filter(pl => pl.id !== playerID)}
+                        currentPlayer={ctx.currentPlayer}
+                        stable={_.mapObject(_.mapObject(G.stable, (val, key) => [...val, ...G.temporaryStable[key]]), c => c.map(d => G.deck[d]))}
+                        handCount={G.players.map(pl => G.hand[pl.id].length)}
+                        upgradeDowngradeStable={_.mapObject(G.upgradeDowngradeStable, c => c.map(d => G.deck[d]))}
+                        highlightMode={stableHighlightMode}
+                        onHandClick={playerID => setShowPlayerHand(playerID)}
+                        onStableCardClick={cardID => {
                             if (cardInteraction?.key === "click_on_other_stable_card" || cardInteraction?.key === "card_to_card") {
-                                console.log("Detected click for cardInteraction with key <click_on_other_stable_card>");
+                                console.log("Detected click for cardInteraction with key <click_on_other_stable_card | card_to_card>");
                                 // is clicked card a valid target?
                                 if (cardInteraction.info.targets.find(s => s.cardID === cardID)) {
                                     console.log(`Clicked card is a valid target. Execute instruction with id <${cardInteraction.info.instructionID}>`);
@@ -382,157 +398,336 @@ const Board = (props: any) => {
                                         protagonist: playerID, cardID
                                     });
                                     setCardInteraction(undefined);
+                                    moves.setUICardToCard(undefined)
                                 }
                             }
-                        }
-                    }}
-                    onStableItemMouseEnter={cardID => {
-                        const o = openScenes.filter(([instr, scene]) => instr.ui.info?.source === cardID);
-                        let targets: HoverTarget[] = [];
-                        o.forEach(([instruction, scene]) => {
-                            targets = [...targets, ...findUITargets(G, ctx, instruction)];
-                        });
-
-                        // show hover targets if the hovered card is a source card
-                        if (o.length > 0) {
-                            setHoverTargets({sourceCardID: cardID, targets});
-                        }
-                    }}
-                    onStableItemMouseLeave={cardID => {
-                        // if a card to card interaction is in progress we do not want to unhighlight the targets
-                        // thus we unhighlight the targets when are not in a card to card interaction
-                        // this if query checks this condition 
-                        if (cardInteraction?.key !== "card_to_card") {
-                            setHoverTargets(undefined);
-                        }
-                    }}
-                    renderAccessoryHoverItem={cardID => {
-                        let boardState = boardStates.find(s => s.type === "discard__popup__ask" && s.info?.sourceCardID === cardID);
-                        if (boardState) {
-                            const [instruction, action, scene] = _findInstruction(G, boardState.info?.instructionID)!;
-                            // this if condition is just for typescript interference
-                            if (instruction.do.key === "discard" && instruction.ui.type === "single_action_popup") {
-                                return (
-                                    <CardPopupSingleAction
-                                        text={instruction.ui.info?.singleActionText!}
-                                        onClick={() => {
-                                            moves.commit(scene!.id);
-                                        }}
-                                    />
-                                );
+                        }}
+                        onStableCardMouseEnter={cardID => {
+                            if (cardInteraction?.key === "card_to_card") {
+                                moves.setUICardToCard({
+                                    sourceCardID: cardInteraction.info.sourceCardID,
+                                    instructionID: cardInteraction.info.instructionID,
+                                    targetCardID: cardID,
+                                    protagonist: playerID,
+                                })
                             }
-                        }
-
-                        boardState = boardStates.find(s => s.type === "bring__popup__ask" && s.info?.sourceCardID === cardID);
-                        if (boardState) {
-                            const [instruction, action, scene] = _findInstruction(G, boardState.info?.instructionID)!;
-                            // this if condition is just for typescript interference
-                            if (instruction.do.key === "bringToStable" && instruction.ui.type === "single_action_popup") {
-                                return (
-                                    <CardPopupSingleAction
-                                        text={instruction.ui.info?.singleActionText!}
-                                        onClick={() => {
-                                            moves.commit(scene!.id);
-                                        }}
-                                    />
-                                );
+                        }}
+                        onStableCardMouseLeave={cardID => {
+                            if (cardInteraction?.key === "card_to_card") {
+                                moves.setUICardToCard(undefined)
                             }
-                        }
+                        }}
+                        onPlayerClick={plid => {
+                            if (cardInteraction?.key === "card_to_player") {
+                                console.log("Detected click for cardInteraction with key <card_to_player>");
 
-                        boardState = boardStates.find(s => (s.type === "shakeUp" || s.type === "reset" || s.type === "shuffleDiscardPileIntoDrawPile") && s.info?.sourceCardID === cardID);
-                        if (boardState) {
-                            const [instruction, action, scene] = _findInstruction(G, boardState.info?.instructionID)!;
-                            // this if condition is just for typescript interference
-                            if ((instruction.do.key === "shakeUp" || instruction.do.key === "reset" || instruction.do.key === "shuffleDiscardPileIntoDrawPile") && instruction.ui.type === "single_action_popup") {
-                                return (
-                                    <CardPopupSingleAction
-                                        text={instruction.ui.info?.singleActionText!}
-                                        onClick={() => {
-                                            moves.executeDo(instruction.id, {protagonist: playerID, sourceCardID: cardID});
-                                        }}
-                                    />
-                                );
+                                if (G.deck[cardInteraction.info.sourceCardID].title === "Blatant Thievery") {
+                                    setShowBlatantThievery(plid);
+                                    return;
+                                }
+
+                                // is clicked card a valid target?
+                                if (cardInteraction.info.targets.find(s => s.playerID === plid)) {
+                                    console.log(`Clicked player is a valid target. Execute instruction with id <${cardInteraction.info.instructionID}>`);
+                                    moves.executeDo(cardInteraction.info.instructionID, {
+                                        protagonist: playerID, playerID: plid
+                                    });
+                                    setCardInteraction(undefined);
+                                }
+                            } else if (cardInteraction?.key === "play_upgradeDowngradeCardFromHand__choose_target") {
+                                moves.playUpgradeDowngradeCard(playerID, plid, cardInteraction.info.cardID);
+                                setCardInteraction(undefined);
                             }
-                        }
-
-                        boardState = boardStates.find(s => (s.type === "revive") && s.info?.sourceCardID === cardID);
-                        if (boardState) {
-                            const [instruction, action, scene] = _findInstruction(G, boardState.info?.instructionID)!;
-                            // this if condition is just for typescript interference
-                            if ((instruction.do.key === "revive") && instruction.ui.type === "single_action_popup") {
-                                return (
-                                    <CardPopupSingleAction
-                                        text={instruction.ui.info?.singleActionText!}
-                                        onClick={() => {
-                                            setShowDiscardFinder(boardState?.info?.targets.map((s: ReviveTarget) => ({ cardID: s.cardID})));
-                                        }}
-                                    />
-                                );
+                        }}
+                    />
+                </Main>
+                <Middle>
+                    <DrawPileWrapper zIndexFocus={isHoveringOverHandCard}>
+                        {renderEndTurnButton(moves, playerID, () => { playEndTurnButtonSound() }, boardStates)}
+                        <MiddleLabel>Deck</MiddleLabel>
+                        <DrawPile onClick={() => {
+                            if (boardStates.find(s => s.type === "drawCard")) {
+                                if (ctx.activePlayers![playerID] === "beginning") {
+                                    playDrawCardSound();
+                                    moves.drawAndAdvance();
+                                } else if (ctx.activePlayers![playerID] === "action_phase") {
+                                    playDrawCardSound();
+                                    moves.drawAndEnd(playerID);
+                                }
+                            } else if (boardStates.find(s => s.type === "draw__clickOnDrawPile")) {
+                                playDrawCardSound();
+                                const boardState = boardStates.find(s => s.type === "draw__clickOnDrawPile")!;
+                                moves.executeDo(boardState.info!.instructionID, {
+                                    protagonist: playerID, count: boardState.info!.count
+                                });
                             }
-                        }
+                        }} isGlowing={boardStates.find(s => s.type === "drawCard" || s.type === "draw__clickOnDrawPile") !== undefined} count={G.drawPile.length} />
+                    </DrawPileWrapper>
+                    <AnimatePresence>
 
-                        boardState = boardStates.find(s => (s.type === "reviveFromNursery") && s.info?.sourceCardID === cardID);
-                        if (boardState) {
-                            const [instruction, action, scene] = _findInstruction(G, boardState.info?.instructionID)!;
-                            // this if condition is just for typescript interference
-                            if ((instruction.do.key === "reviveFromNursery") && instruction.ui.type === "single_action_popup") {
-                                return (
-                                    <CardPopupSingleAction
-                                        text={instruction.ui.info?.singleActionText!}
-                                        onClick={() => {
-                                            setSHowNurseryFinder(true);
-                                        }}
-                                    />
-                                );
+                        {
+                            renderNeighLabel(G, ctx, moves, playerID)
+                        }
+                    </AnimatePresence>
+
+                    {renderInfoLabel(G, ctx, playerID, boardStates)}
+                    <MiddleLeftWrapper zIndexFocus={isHoveringOverHandCard}>
+                        <div>
+                            <MiddleLabel>Nursery</MiddleLabel>
+                            <Nursery cards={G.nursery.map(c => G.deck[c])} onClick={() => {
+                                setSHowNurseryFinder(true);
+                            }} />
+                        </div>
+                        <div style={{ marginTop: "1em" }}>
+                            <MiddleLabel>Discard pile</MiddleLabel>
+                            <DiscardPile cards={G.discardPile.map(c => G.deck[c])} onClick={() => {
+                                setShowDiscardFinder(G.discardPile.map(c => ({ cardID: c })));
+                            }} />
+                        </div>
+                    </MiddleLeftWrapper>
+                </Middle>
+                <Bottom>
+                    <Stable
+                        ref={stableRef}
+                        cards={[...G.stable[playerID], ...G.temporaryStable[playerID]].map(c => G.deck[c])}
+                        upgradeDowngradeCards={G.upgradeDowngradeStable[playerID].map(c => G.deck[c])}
+                        glowing={glowingCardIDs}
+                        highlightMode={stableHighlightMode}
+                        onStableItemClick={(evt, cardID) => {
+                            // initiate card to card interaction for destroy and steal actions
+                            if (cardInteraction === undefined) {
+                                // check if it is a destroy or steal action
+                                // check if the card that is clicked is the source for the action
+                                let boardState = _.first(boardStates.filter(s => s.info?.sourceCardID === cardID && (s.type === "destroy__cardToCard" || s.type === "steal__cardToCard" || s.type === "sacrifice__cardToCard" || s.type === "move__cardToCard" || s.type === "returnToHand__cardToCard" || s.type === "backKick__card_to_card" || s.type === "unicornswap1")));
+
+                                if (boardState) {
+                                    const cardRef = stableRef.current?.getStableItemRef(cardID)!;
+                                    const coord = cardRef.current!.getBoundingClientRect();
+                                    const from = {
+                                        x: coord.left + coord.width / 2.0,
+                                        y: coord.top + coord.height / 2.0,
+                                    };
+                                    setCardInteraction({
+                                        key: "card_to_card",
+                                        info: {
+                                            sourceCardID: cardID,
+                                            instructionID: boardState.info!.instructionID,
+                                            targets: boardState.info!.targets,
+                                            currentMousePosition: { x: evt.clientX, y: evt.clientY },
+                                            startingMousePosition: { ...from }
+                                        }
+                                    });
+                                }
+
+                                boardState = _.first(boardStates.filter(s => (s.type === "swapHands__cardToPlayer" || s.type === "pullRandom__cardToPlayer" || s.type === "move2__cardToPlayer" || s.type === "makeSomeoneDiscard__cardToPlayer" || s.type === "unicornswap2" || s.type === "blatantThievery1") && s.info?.sourceCardID === cardID));
+                                if (boardState) {
+                                    const cardRef = stableRef.current?.getStableItemRef(cardID)!;
+                                    const coord = cardRef.current!.getBoundingClientRect();
+                                    const from = {
+                                        x: coord.left + coord.width / 2.0,
+                                        y: coord.top + coord.height / 2.0,
+                                    };
+                                    setCardInteraction({
+                                        key: "card_to_player",
+                                        info: {
+                                            sourceCardID: cardID,
+                                            instructionID: boardState.info!.instructionID,
+                                            targets: boardState.info!.targets,
+                                            currentMousePosition: { x: evt.clientX, y: evt.clientY },
+                                            startingMousePosition: { ...from }
+                                        }
+                                    });
+                                }
+                            } else {
+                                // cancel card interaction 
+                                if ((cardInteraction.key === "card_to_card" || cardInteraction.key === "card_to_player") && cardInteraction.info.sourceCardID === cardID) {
+                                    setCardInteraction(undefined);
+                                    moves.setUICardToCard(undefined);
+                                    return;
+                                }
+
+                                if (cardInteraction?.key === "click_on_other_stable_card" || cardInteraction?.key === "card_to_card") {
+                                    console.log("Detected click for cardInteraction with key <click_on_other_stable_card>");
+                                    // is clicked card a valid target?
+                                    if (cardInteraction.info.targets.find(s => s.cardID === cardID)) {
+                                        console.log(`Clicked card is a valid target. Execute instruction with id <${cardInteraction.info.instructionID}>`);
+                                        moves.executeDo(cardInteraction.info.instructionID, {
+                                            protagonist: playerID, cardID
+                                        });
+                                        setCardInteraction(undefined);
+                                    }
+                                }
                             }
-                        }
+                        }}
+                        onStableItemMouseEnter={cardID => {
+                            playHubMouseOverSound();
+                            const o = openScenes.filter(([instr, scene]) => instr.ui.info?.source === cardID);
+                            let targets: HoverTarget[] = [];
+                            o.forEach(([instruction, scene]) => {
+                                targets = [...targets, ...findUITargets(G, ctx, instruction)];
+                            });
 
-                        boardState = boardStates.find(s => (s.type === "addFromDiscardPileToHand__single_action_popup") && s.info?.sourceCardID === cardID);
-                        if (boardState) {
-                            const [instruction, action, scene] = _findInstruction(G, boardState.info?.instructionID)!;
-                            // this if condition is just for typescript interference
-                            if ((instruction.do.key === "addFromDiscardPileToHand") && instruction.ui.type === "single_action_popup") {
-                                return (
-                                    <CardPopupSingleAction
-                                        text={instruction.ui.info?.singleActionText!}
-                                        onClick={() => {
-                                            setShowDiscardFinder(boardState?.info?.targets.map((s: AddFromDiscardPileToHandTarget) => ({ cardID: s.cardID})));
-                                        }}
-                                    />
-                                );
+                            // show hover targets if the hovered card is a source card
+                            if (o.length > 0) {
+                                setHoverTargets({ sourceCardID: cardID, targets });
                             }
-                        }
-
-                        boardState = boardStates.find(s => (s.type === "search__single_action_popup") && s.info?.sourceCardID === cardID);
-                        if (boardState) {
-                            const [instruction, action, scene] = _findInstruction(G, boardState.info?.instructionID)!;
-                            // this if condition is just for typescript interference
-                            if ((instruction.do.key === "search") && instruction.ui.type === "single_action_popup") {
-                                return (
-                                    <CardPopupSingleAction
-                                        text={instruction.ui.info?.singleActionText!}
-                                        onClick={() => {
-                                            setShowDeckFinder(boardState?.info?.targets);
-                                        }}
-                                    />
-                                );
+                        }}
+                        onStableItemMouseLeave={cardID => {
+                            // if a card to card interaction is in progress we do not want to unhighlight the targets
+                            // thus we unhighlight the targets when are not in a card to card interaction
+                            // this if query checks this condition 
+                            if (cardInteraction?.key !== "card_to_card") {
+                                setHoverTargets(undefined);
                             }
-                        }
+                        }}
+                        renderAccessoryHoverItem={cardID => {
+                            let boardState = boardStates.find(s => s.type === "discard__popup__ask" && s.info?.sourceCardID === cardID);
+                            if (boardState) {
+                                const [instruction, action, scene] = _findInstruction(G, boardState.info?.instructionID)!;
+                                // this if condition is just for typescript interference
+                                if (instruction.do.key === "discard" && instruction.ui.type === "single_action_popup") {
+                                    return (
+                                        <CardPopupSingleAction
+                                            text={instruction.ui.info?.singleActionText!}
+                                            onClick={() => {
+                                                moves.commit(scene!.id);
+                                            }}
+                                        />
+                                    );
+                                }
+                            }
+
+                            boardState = boardStates.find(s => s.type === "bring__popup__ask" && s.info?.sourceCardID === cardID);
+                            if (boardState) {
+                                const [instruction, action, scene] = _findInstruction(G, boardState.info?.instructionID)!;
+                                // this if condition is just for typescript interference
+                                if (instruction.do.key === "bringToStable" && instruction.ui.type === "single_action_popup") {
+                                    return (
+                                        <CardPopupSingleAction
+                                            text={instruction.ui.info?.singleActionText!}
+                                            onClick={() => {
+                                                moves.commit(scene!.id);
+                                            }}
+                                        />
+                                    );
+                                }
+                            }
+
+                            boardState = boardStates.find(s => (s.type === "shakeUp" || s.type === "reset" || s.type === "shuffleDiscardPileIntoDrawPile") && s.info?.sourceCardID === cardID);
+                            if (boardState) {
+                                const [instruction, action, scene] = _findInstruction(G, boardState.info?.instructionID)!;
+                                // this if condition is just for typescript interference
+                                if ((instruction.do.key === "shakeUp" || instruction.do.key === "reset" || instruction.do.key === "shuffleDiscardPileIntoDrawPile") && instruction.ui.type === "single_action_popup") {
+                                    return (
+                                        <CardPopupSingleAction
+                                            text={instruction.ui.info?.singleActionText!}
+                                            onClick={() => {
+                                                moves.executeDo(instruction.id, { protagonist: playerID, sourceCardID: cardID });
+                                            }}
+                                        />
+                                    );
+                                }
+                            }
+
+                            boardState = boardStates.find(s => (s.type === "revive") && s.info?.sourceCardID === cardID);
+                            if (boardState) {
+                                const [instruction, action, scene] = _findInstruction(G, boardState.info?.instructionID)!;
+                                // this if condition is just for typescript interference
+                                if ((instruction.do.key === "revive") && instruction.ui.type === "single_action_popup") {
+                                    return (
+                                        <CardPopupSingleAction
+                                            text={instruction.ui.info?.singleActionText!}
+                                            onClick={() => {
+                                                setShowDiscardFinder(boardState?.info?.targets.map((s: ReviveTarget) => ({ cardID: s.cardID })));
+                                            }}
+                                        />
+                                    );
+                                }
+                            }
+
+                            boardState = boardStates.find(s => (s.type === "reviveFromNursery") && s.info?.sourceCardID === cardID);
+                            if (boardState) {
+                                const [instruction, action, scene] = _findInstruction(G, boardState.info?.instructionID)!;
+                                // this if condition is just for typescript interference
+                                if ((instruction.do.key === "reviveFromNursery") && instruction.ui.type === "single_action_popup") {
+                                    return (
+                                        <CardPopupSingleAction
+                                            text={instruction.ui.info?.singleActionText!}
+                                            onClick={() => {
+                                                setSHowNurseryFinder(true);
+                                            }}
+                                        />
+                                    );
+                                }
+                            }
+
+                            boardState = boardStates.find(s => (s.type === "addFromDiscardPileToHand__single_action_popup") && s.info?.sourceCardID === cardID);
+                            if (boardState) {
+                                const [instruction, action, scene] = _findInstruction(G, boardState.info?.instructionID)!;
+                                // this if condition is just for typescript interference
+                                if ((instruction.do.key === "addFromDiscardPileToHand") && instruction.ui.type === "single_action_popup") {
+                                    return (
+                                        <CardPopupSingleAction
+                                            text={instruction.ui.info?.singleActionText!}
+                                            onClick={() => {
+                                                setShowDiscardFinder(boardState?.info?.targets.map((s: AddFromDiscardPileToHandTarget) => ({ cardID: s.cardID })));
+                                            }}
+                                        />
+                                    );
+                                }
+                            }
+
+                            boardState = boardStates.find(s => (s.type === "search__single_action_popup") && s.info?.sourceCardID === cardID);
+                            if (boardState) {
+                                const [instruction, action, scene] = _findInstruction(G, boardState.info?.instructionID)!;
+                                // this if condition is just for typescript interference
+                                if ((instruction.do.key === "search") && instruction.ui.type === "single_action_popup") {
+                                    return (
+                                        <CardPopupSingleAction
+                                            text={instruction.ui.info?.singleActionText!}
+                                            onClick={() => {
+                                                setShowDeckFinder(boardState?.info?.targets);
+                                            }}
+                                        />
+                                    );
+                                }
+                            }
 
 
 
-                        return undefined;
-                    }}
-                    onPlaceHereClick={() => {
-                        if (cardInteraction?.key === "play_upgradeDowngradeCardFromHand__choose_target") {
-                            moves.playUpgradeDowngradeCard(playerID, playerID, cardInteraction.info.cardID);
-                            setCardInteraction(undefined);
-                        }
-                    }}
-                />
-                {renderHand(G, ctx, moves, playerID, boardStates, cardInteraction, setCardInteraction, () => setHoveringOverHandCard(true), () => setHoveringOverHandCard(false), () => setHoveringOverHandCard(false), openScenes)}
-            </Bottom>
-        </Wrapper>
+                            return undefined;
+                        }}
+                        onPlaceHereClick={() => {
+                            if (cardInteraction?.key === "play_upgradeDowngradeCardFromHand__choose_target") {
+                                moves.playUpgradeDowngradeCard(playerID, playerID, cardInteraction.info.cardID);
+                                setCardInteraction(undefined);
+                            }
+                        }}
+                    />
+                    {renderHand(G, ctx, moves, playerID, boardStates, cardInteraction, setCardInteraction,
+                        (index) => {
+                            setHoveringOverHandCard(true);
+
+                            if (playerID === ctx.currentPlayer) {
+                                moves.setUIHoverHandIndex(index)
+                            }
+                        },
+                        (index) => {
+                            setHoveringOverHandCard(false);
+
+                            if (playerID === ctx.currentPlayer) {
+                                moves.setUIHoverHandIndex(undefined);
+                            }
+                        },
+                        () => {
+                            setHoveringOverHandCard(false)
+
+                            if (playerID === ctx.currentPlayer) {
+                                moves.setUIHoverHandIndex(undefined);
+                            }
+                        }, openScenes)}
+                </Bottom>
+            </Wrapper></AnimateSharedLayout>
     );
 }
 
@@ -619,16 +814,17 @@ const renderTop = (G: UnstableUnicornsGame, ctx: Ctx, isCurrentPlayer: boolean, 
         return (
             <HiddenHand
                 count={G.hand[ctx.currentPlayer].length}
+                active={G.uiHoverHandIndex}
             />
         );
     }
 };
 
-const renderEndTurnButton = (moves: any, playerID: PlayerID, boardStates: BoardState[]) => {
+const renderEndTurnButton = (moves: any, playerID: PlayerID, playEndTurnButtonSound: () => void, boardStates: BoardState[]) => {
     if (boardStates.find(s => s.type === "endTurn")) {
         return (
             <EndTurnButtonWrapper>
-                <EndTurnButton onClick={() => { moves.end(playerID); }}>End turn</EndTurnButton>
+                <EndTurnButton onClick={() => { playEndTurnButtonSound(); moves.end(playerID); }}>End turn</EndTurnButton>
             </EndTurnButtonWrapper>
         );
     }
@@ -636,7 +832,7 @@ const renderEndTurnButton = (moves: any, playerID: PlayerID, boardStates: BoardS
     return undefined;
 }
 
-const renderHand = (G: UnstableUnicornsGame, ctx: Ctx, moves: any, playerID: PlayerID, boardStates: BoardState[], cardInteraction: CardInteraction | undefined, setCardInteraction: (interaction: CardInteraction) => void, onMouseEnterHandCard: () => void, onMouseLeaveHandCard: () => void, onHandCardClick: () => void, openScenes: Array<[Instruction, Scene]>) => {
+const renderHand = (G: UnstableUnicornsGame, ctx: Ctx, moves: any, playerID: PlayerID, boardStates: BoardState[], cardInteraction: CardInteraction | undefined, setCardInteraction: (interaction: CardInteraction) => void, onMouseEnterHandCard: (index: number) => void, onMouseLeaveHandCard: (index: number) => void, onHandCardClick: () => void, openScenes: Array<[Instruction, Scene]>) => {
     let glowingCards: CardID[] = [];
 
     if (boardStates.find(s => s.type === "playCard")) {
@@ -665,7 +861,7 @@ const renderHand = (G: UnstableUnicornsGame, ctx: Ctx, moves: any, playerID: Pla
             if (cardsOnHandThatCanBePlayed.includes(cardID)) {
                 const card = G.deck[cardID];
                 if (card.type === "upgrade" || card.type === "downgrade") {
-                    setCardInteraction({ 
+                    setCardInteraction({
                         key: "play_upgradeDowngradeCardFromHand__choose_target",
                         info: {
                             instructionID: "____________",
@@ -704,16 +900,34 @@ const renderHand = (G: UnstableUnicornsGame, ctx: Ctx, moves: any, playerID: Pla
     }
 
     return (
-        <Hand cards={G.hand[playerID].map(c => G.deck[c])} glowingCards={glowingCards} onClick={onClick} onMouseEnterHandCard={() => onMouseEnterHandCard()} onMouseLeaveHandCard={() => onMouseLeaveHandCard()} />
+        <Hand cards={G.hand[playerID].map(c => G.deck[c])} glowingCards={glowingCards} onClick={onClick} onMouseEnterHandCard={(idx) => onMouseEnterHandCard(idx)} onMouseLeaveHandCard={(idx) => onMouseLeaveHandCard(idx)} />
     );
 }
 
-const renderInfoLabel = (G: UnstableUnicornsGame, boardStates: BoardState[]) => {
+const renderInfoLabel = (G: UnstableUnicornsGame, ctx: Ctx, playerID: PlayerID, boardStates: BoardState[]) => {
     let text: string | undefined = undefined;
+    const openScenes = _findOpenScenesWithProtagonist(G, playerID);
+    const scenesInProgress = _findInProgressScenesWithProtagonist(G, playerID);
+
+    if (ctx.currentPlayer === playerID && ctx.activePlayers![playerID] === "beginning" && openScenes.length > 0) {
+        text = "One of your cards has an effect that can be activated. You can activate it and after that draw a card. You may also skip the effect and just draw a card."
+    }
+
+    if (ctx.currentPlayer === playerID && ctx.activePlayers![playerID] === "beginning" && scenesInProgress.length > 0) {
+        text = "One of your cards has an effect that must be activated. You must first activate it before you can draw a card."
+    }
+
+    if (playerID === ctx.currentPlayer) {
+        if (G.countPlayedCardsInActionPhase === 0 && G.neighDiscussion === undefined && ctx.activePlayers![playerID] === "action_phase") {
+            // action phase and no card has been played or drawn
+            // player may draw a card or play a card
+            text = "You can play a card from your hand or you can draw a card. You cannot do both."
+        }
+    }
 
     if (boardStates.find(o => o.type === "discard" || o.type === "discard__popup__committed")) {
         text = "Click on a card in your hand to discard that card."
-    } 
+    }
 
     if (boardStates.find(o => o.type === "destroy__click_on_card_in_stable")) {
         text = "Click on a card in a player's stable to destroy that card."
@@ -765,7 +979,7 @@ const renderInfoLabel = (G: UnstableUnicornsGame, boardStates: BoardState[]) => 
     if (boardStates.find(o => o.type === "unicornswap2")) {
         const boardState = boardStates.find(o => o.type === "unicornswap2")!;
         const card = G.deck[boardState.info!.sourceCardID];
-        text = `Click on ${card.title} and then click on another player from whom you like to steal a card.`
+        text = `Click on ${card.title} and then click on another player to which you would like to move the card.`
     }
 
     if (boardStates.find(o => o.type === "blatantThievery1")) {
@@ -779,6 +993,9 @@ const renderInfoLabel = (G: UnstableUnicornsGame, boardStates: BoardState[]) => 
         const card = G.deck[boardState.info!.sourceCardID];
         text = `Click on ${card.title} and then click on a player to pull a random card from that player.`
     }
+
+
+
 
     if (!text) {
         return undefined;
@@ -795,7 +1012,7 @@ const renderInfoLabel = (G: UnstableUnicornsGame, boardStates: BoardState[]) => 
 
 ////////////////////////////////
 
-const Wrapper = styled.div`
+const Wrapper = styled(motion.div)`
     width: 100%;
     height: 100vh;
     background-image: url(${BG});
@@ -810,7 +1027,8 @@ const Wrapper = styled.div`
 const Top = styled.div`
     position: absolute; 
     top: 0;
-    z-index: 0;
+    z-index: 2;
+    height: 50px;
 `;
 
 const Main = styled.div`
@@ -852,7 +1070,7 @@ const DrawPileWrapper = styled.div<{ zIndexFocus: boolean }>`
 
 const Bottom = styled.div`
     position: absolute;
-    bottom: 140px;
+    bottom: 120px;
     width: 100%;
     height: 120px;
     display: flex;

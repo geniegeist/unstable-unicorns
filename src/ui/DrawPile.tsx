@@ -3,6 +3,8 @@ import type { Card } from "../game/card";
 import ImageLoader from '../assets/card/imageLoader';
 import { _typeToColor } from './util';
 import BACK from '../assets/card/UU-Back-Main.png';
+import useSound from 'use-sound';
+const HubMouseOverSound = require('../assets/sound/Hub_Mouseover.ogg').default;
 
 type Props = {
     count: number;
@@ -11,8 +13,12 @@ type Props = {
 }
 
 const DrawPile = (props: Props) => {
+    const [playHubMouseOverSound] = useSound(HubMouseOverSound, {
+        volume: 0.2,
+    });
+
     return (
-        <Wrapper isGlowing={props.isGlowing} onClick={() => props.onClick()}>
+        <Wrapper onMouseEnter={() => playHubMouseOverSound()} isGlowing={props.isGlowing} onClick={() => props.onClick()}>
 
         </Wrapper>
     );

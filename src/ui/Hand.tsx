@@ -6,30 +6,36 @@ import { _typeToColor } from './util';
 import CardHover from './CardHover';
 import { useState } from 'react';
 
+import useSound from 'use-sound';
+const HandOverSound = require('../assets/sound/collection_manager_card_mouse_over.ogg').default;
+
 type Props = {
     cards: Card[];
     glowingCards: CardID[];
     onClick: (evt: React.MouseEvent, cardID: CardID) => void;
-    onMouseEnterHandCard: () => void;
-    onMouseLeaveHandCard: () => void;
+    onMouseEnterHandCard: (index: number) => void;
+    onMouseLeaveHandCard: (index: number) => void;
 }
 
 const Hand = (props: Props) => {
 
     const [hoverCardID, setHoverCardID] = useState<CardID | undefined>(undefined);
-
+    const [playHandOverCardSound] = useSound(HandOverSound, {
+        volume: 0.3,
+    });
 
 
     return (
         <Wrapper>
             {props.cards.map((card, idx) => {
                 const onMouseEnter = () => {
-                    props.onMouseEnterHandCard();
+                    playHandOverCardSound();
+                    props.onMouseEnterHandCard(idx);
                     setHoverCardID(card.id);
                 }
 
                 const onMouseLeave = () => {
-                    props.onMouseLeaveHandCard();
+                    props.onMouseLeaveHandCard(idx);
                     setHoverCardID(undefined);
                 };
 
@@ -45,7 +51,7 @@ const Hand = (props: Props) => {
                         </Top>
                         <CardImage image={ImageLoader.load(card.image)} />
                         {hoverCardID === card.id &&
-                            <CardHover scale={0.75} position="top" offset={{x: idx < 3 ? 210:-220,y:0}} text={card.description} color={_typeToColor(card.type)}/>
+                            <CardHover title={card.title} scale={0.75} position="top" offset={{ x: idx < 3 ? 210 : -220, y: 0 }} text={card.description} color={_typeToColor(card.type)} />
                         }
                     </CardWrapper>
                 );
@@ -62,7 +68,7 @@ const Wrapper = styled.div`
     font-family: 'Open Sans Condensed', sans-serif;
 `;
 
-const CardWrapper = styled.div<{borderColor: string, transform: {x: number, y: number, rotate: string}, isGlowing: boolean}>`
+const CardWrapper = styled.div<{ borderColor: string, transform: { x: number, y: number, rotate: string }, isGlowing: boolean }>`
     border-radius: 16px;
     width: 175px;
     height: 250px;
@@ -89,7 +95,7 @@ const Top = styled.div`
     margin-left: 1em;
 `;
 
-const Type = styled.div<{fontColor: string}>`
+const Type = styled.div<{ fontColor: string }>`
     font-weight: bold;
     font-size: 0.9em;
     color: ${props => props.fontColor};
@@ -100,7 +106,7 @@ const Title = styled.div`
     font-size: 1.1em;
 `;
 
-const CardImage = styled.div<{image: string}>`
+const CardImage = styled.div<{ image: string }>`
     background-image: url(${props => props.image});
     background-size: cover;
     background-repeat: no-repeat;
@@ -157,7 +163,7 @@ function _typeToString(type: CardType): string {
     return "Undefined";
 }
 
-function _transformForCard(idx: number, countCards: number): {x: number, y: number, rotate: string} {
+function _transformForCard(idx: number, countCards: number): { x: number, y: number, rotate: string } {
     const midIdx = (countCards / 2);
     let degStep = 0;
     let xStep = 0;
@@ -168,12 +174,12 @@ function _transformForCard(idx: number, countCards: number): {x: number, y: numb
         yStep = 7;
     } else if (countCards <= 8) {
         degStep = 5.5;
-        xStep = -80;
-        yStep = 5;
+        xStep = -90;
+        yStep = 3;
     } else {
         degStep = 4;
         xStep = -100;
-        yStep = 3;
+        yStep = 1;
     }
 
     return { x: (idx - midIdx) * xStep, y: Math.abs(idx - midIdx) * Math.abs(idx - midIdx) * yStep, rotate: `${(idx - midIdx) * degStep}deg` };

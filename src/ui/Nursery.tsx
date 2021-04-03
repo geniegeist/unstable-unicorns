@@ -5,6 +5,8 @@ import ImageLoader from '../assets/card/imageLoader';
 import { _typeToColor } from './util';
 import { useState } from 'react';
 import CardHover from './CardHover';
+import useSound from 'use-sound';
+const HubMouseOverSound = require('../assets/sound/Hub_Mouseover.ogg').default;
 
 type Props = {
     cards: Card[];
@@ -13,15 +15,18 @@ type Props = {
 
 const Nursery = (props: Props) => {
     const [hover, setHover] = useState<boolean>(false);
+    const [playHubMouseOverSound] = useSound(HubMouseOverSound, {
+        volume: 0.2,
+    });
 
     return (
-        <Wrapper onClick={props.onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
+        <Wrapper onClick={props.onClick} onMouseEnter={() => {setHover(true); playHubMouseOverSound()}} onMouseLeave={() => setHover(false)}>
             {props.cards.length > 0 &&
                 <CardImage image={ImageLoader.load(_.last(props.cards)!.image)}>
                 </CardImage>
             }
             {_.last(props.cards) && hover &&
-                <CardHover position={"top"} offset={{x: 120, y: -10}} color={_typeToColor(_.last(props.cards)!.type)} text={_.last(props.cards)!.description} />
+                <CardHover title={_.last(props.cards)!.title}position={"top"} offset={{x: 120, y: -10}} color={_typeToColor(_.last(props.cards)!.type)} text={_.last(props.cards)!.description} />
             }
         </Wrapper>
     );

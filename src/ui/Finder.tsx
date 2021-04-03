@@ -35,10 +35,10 @@ const Finder = (props: Props) => {
                                 <CardImage image={props.hide ? ImageLoader.load("back") : ImageLoader.load(card.image)} color={props.hide ? "black"  : _typeToColor(card.type)} />
                             </div>
                             {(!props.hide) && showHover === card.id && idx % 5 <= 2 && 
-                                <CardHover position={"top"} offset={{x: 150, y: 20}} color=       {_typeToColor(card.type)} text={card.description} />
+                                <CardHover title={card.title} position={"top"} offset={{x: 150, y: 20}} color=       {_typeToColor(card.type)} text={card.description} />
                             }
                             {(!props.hide) && showHover === card.id && idx % 5 > 2 && 
-                                <CardHover position={"top"} offset={{x: -300, y: 20}} color=       {_typeToColor(card.type)} text={card.description} />
+                                <CardHover title={card.title} position={"top"} offset={{x: -300, y: 20}} color=       {_typeToColor(card.type)} text={card.description} />
                             }
                         </Item>
                         

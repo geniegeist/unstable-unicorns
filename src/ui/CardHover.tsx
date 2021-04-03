@@ -7,11 +7,15 @@ type Props = {
     position: "top" | "bottom";
     scale?: number;
     children?: React.ReactElement;
+    title: string;
 }
 
 const CardHover = (props: Props) => {
     return (
         <Wrapper scale={props.scale} color={props.color} offset={props.offset} position={props.position}>
+            <div style={{marginTop: "0", fontSize: "1.4em"}}>
+                {props.title}
+            </div>
             <div>
                 {props.text}
             </div>

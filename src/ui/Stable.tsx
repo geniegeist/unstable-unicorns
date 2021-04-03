@@ -7,6 +7,10 @@ import React from 'react';
 import { useImperativeHandle } from 'react';
 import useDynamicRefs from 'use-dynamic-refs';
 import CardHover from './CardHover';
+import { motion } from 'framer-motion';
+import useSound from 'use-sound';
+const MouseClickSound = require('../assets/sound/board_common_dirt_poke_1.ogg').default;
+
 
 type Props = {
     cards: Card[];
@@ -28,6 +32,10 @@ const Stable = React.forwardRef<StableHandle, Props>((props, ref) => {
 
     const [getItemRefs, setItemRefs] = useDynamicRefs();
     const [showHover, setShowHover] = useState<undefined | CardID>(undefined);
+
+    const [playMouseClick] = useSound(MouseClickSound, {
+        volume: 0.2,
+    });
 
     useImperativeHandle(ref, () => ({
         getStableItemRef: (cardID: CardID) => {
@@ -54,13 +62,14 @@ const Stable = React.forwardRef<StableHandle, Props>((props, ref) => {
                             }}
                         >
                             <MiniCardImage 
+                                layoutId={`${card.id}`}
                                 src={ImageLoader.load(card.image)} 
                                 color={_typeToColor(card.type)} 
                                 isGlowing={props.glowing.includes(card.id)} 
                                 isTranslucent={props.highlightMode ? !props.highlightMode.includes(card.id) : false}
                             />
                             {showHover === card.id &&
-                                <CardHover position={"bottom"} offset={{x: 45, y: 10}} color={_typeToColor(card.type)} text={card.description}>
+                                <CardHover title={card.title} position={"bottom"} offset={{x: 45, y: 10}} color={_typeToColor(card.type)} text={card.description}>
                                 {props.renderAccessoryHoverItem(card.id)}
                                 </CardHover>
                             }
@@ -85,20 +94,21 @@ const Stable = React.forwardRef<StableHandle, Props>((props, ref) => {
                             }}
                         >
                             <CardImage 
+                                layoutId={`${card.id}`}
                                 src={ImageLoader.load(card.image)} 
                                 color={_typeToColor(card.type)} 
                                 isGlowing={props.glowing.includes(card.id)} 
                                 isTranslucent={props.highlightMode ? !props.highlightMode.includes(card.id) : false}
                             />
                             {showHover === card.id &&
-                                <CardHover position={"bottom"} offset={{x: 80, y: 0}} color={_typeToColor(card.type)} text={card.description}>
+                                <CardHover title={card.title} position={"bottom"} offset={{x: 80, y: 0}} color={_typeToColor(card.type)} text={card.description}>
                                 {props.renderAccessoryHoverItem(card.id)}
                                 </CardHover>
                             }
                         </StableItem>
                     );
                 })}
-                <Placeholder onClick={evt => props.onPlaceHereClick(evt)}>
+                <Placeholder onClick={evt => {props.onPlaceHereClick(evt); playMouseClick();}}>
                     Place your cards here
                 </Placeholder>
             </StableWrapper>
@@ -117,9 +127,11 @@ const StableWrapper = styled.div`
     background-color: #6D5031;
     padding: 0.5em;
     border-radius: 16px;
+    min-height: 78px;
 `;
 
 const UpgradeDowngradeStableWrapper = styled.div`
+    min-height: 32px;
     display: flex;
     flex-direction: row;
 `;
@@ -139,7 +151,7 @@ const glow = keyframes`
     }
 `;
 
-const CardImage = styled.img<{color: string, isGlowing: boolean, isTranslucent: boolean}>`
+const CardImage = styled(motion.img)<{color: string, isGlowing: boolean, isTranslucent: boolean}>`
     width: 64px;
     height: 64px;
     border-radius: 12px;
@@ -149,7 +161,7 @@ const CardImage = styled.img<{color: string, isGlowing: boolean, isTranslucent: 
     transition: all 0.3s cubic-bezier(.25,.8,.25,1);
 `;
 
-const MiniCardImage = styled.img<{color: string, isGlowing: boolean, isTranslucent: boolean}>`
+const MiniCardImage = styled(motion.img)<{color: string, isGlowing: boolean, isTranslucent: boolean}>`
     width: 32px;
     height: 32px;
     border-radius: 6px;
@@ -173,6 +185,7 @@ const Placeholder = styled.div`
     color: rgba(0,0,0,0.6);
     font-size: 1.4em;
     cursor: pointer;
+    user-select: none;
 `;
 
 // keyframes

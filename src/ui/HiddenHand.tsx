@@ -8,6 +8,7 @@ import BACK from '../assets/card/UU-Back-Main.png';
 type Props = {
     count: number;
     active?: number;
+
 }
 
 const HiddenHand = (props: Props) => {
@@ -16,7 +17,7 @@ const HiddenHand = (props: Props) => {
         <Wrapper>
             {cards.map((card, idx) => {
                 return (
-                    <CardWrapper key={idx} transform={_transformForCard(idx, props.count)}>
+                    <CardWrapper key={idx} transform={_transformForCard(idx, props.count)} active={props.active === idx}>
                     </CardWrapper>
                 );
             })}
@@ -33,7 +34,7 @@ const Wrapper = styled.div`
     pointer-events:none;
 `;
 
-const CardWrapper = styled.div<{transform: {x: number, y: number, rotate: string}}>`
+const CardWrapper = styled.div<{transform: {x: number, y: number, rotate: string}, active: boolean}>`
     background-image: url(${BACK});
     background-size: cover;
     border-radius: 16px;
@@ -43,10 +44,12 @@ const CardWrapper = styled.div<{transform: {x: number, y: number, rotate: string
     display: flex;
     flex-direction: column;
     align-items: center;
-    transform: translate(${props => props.transform.x}px, ${props => props.transform.y}px) rotate(${props => props.transform.rotate});
+    transform: translate(${props => props.transform.x}px, ${props => props.transform.y}px) rotate(${props => props.transform.rotate}) ${props => props.active ? "scale(1.5)" : ""};
     box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
     transition: all 0.3s cubic-bezier(.25,.8,.25,1);
     border: 6px solid black;
+    z-index: 1000;
+
 `;
 
 function _transformForCard(idx: number, countCards: number): {x: number, y: number, rotate: string} {
@@ -60,11 +63,11 @@ function _transformForCard(idx: number, countCards: number): {x: number, y: numb
         yStep = 7;
     } else if (countCards <= 8) {
         degStep = 6;
-        xStep = 90;
+        xStep = -80;
         yStep = 5;
     } else {
         degStep = 4;
-        xStep = 90;
+        xStep = -90;
         yStep = 3;
     }
 

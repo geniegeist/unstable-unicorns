@@ -253,6 +253,9 @@ export function executeDo(G: UnstableUnicornsGame, ctx: Ctx, instructionID: stri
 
     instruction.state = "in_progress";
 
+    // ui sound
+    G.uiExecuteDo = { id: _.uniqueId(), cardID: instruction.ui.info?.source, do: instruction.do };
+
     // execute instruction
     if (instruction.do.key === "destroy") {
         // intervention

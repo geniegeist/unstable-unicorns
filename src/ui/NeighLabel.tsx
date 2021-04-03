@@ -5,7 +5,11 @@ import { Card, CardID } from '../game/card';
 import { UnstableUnicornsGame } from '../game/game';
 import { NeighDiscussion } from '../game/neigh';
 import CardHover from './CardHover';
+import { motion, AnimatePresence } from 'framer-motion';
 import { _typeToColor } from './util';
+import useSound from 'use-sound';
+const MouseClickSound = require('../assets/sound/UI_MouseClick_01.ogg').default;
+const HubMouseOverSound = require('../assets/sound/Hub_Mouseover.ogg').default;
 
 type Props = {
     card: Card;
@@ -23,6 +27,12 @@ export type NeighLabelRole = "original_initiator" | "new_initiator" | "did_neigh
 
 const NeighLabel = (props: Props) => {
     const [showHover, setShowHover] = useState<undefined | CardID>(undefined);
+    const [playMouseClick] = useSound(MouseClickSound, {
+        volume: 0.4,
+    });
+    const [playHoverSound] = useSound(HubMouseOverSound, {
+        volume: 0.3,
+    });
 
     let text = "";
     if (props.role === "original_initiator") {
@@ -44,50 +54,52 @@ const NeighLabel = (props: Props) => {
     }
 
     return (
-        <Wrapper>
-            <div  onMouseEnter={() => {
-                                            setShowHover(props.card.id);
-                                        }} 
-                                        onMouseLeave={() => {
-                                            setShowHover(undefined);
-                                        }}>
-            <CardImage src={ImageLoader.load(props.card.image)} />
-            {showHover === props.card.id &&
-                                            <CardHover position={"bottom"} offset={{x: 80, y: -30}} color={_typeToColor(props.card.type)} text={props.card.description}/>
-                                        }
+        <Wrapper exit={{ opacity: 0, y: 200 }} initial={{ opacity: 0, y: 200 }}
+      animate={{ opacity: 1, y: 0 }} transition={{duration: 1}}>
+            <div onMouseEnter={() => {
+                setShowHover(props.card.id);
+                playHoverSound();
+            }}
+                onMouseLeave={() => {
+                    setShowHover(undefined);
+                }}>
+                <CardImage layoutId={`${props.card.id}`} src={ImageLoader.load(props.card.image)} />
+                {showHover === props.card.id &&
+                    <CardHover title={props.card.title} position={"bottom"} offset={{ x: 80, y: -30 }} color={_typeToColor(props.card.type)} text={props.card.description} />
+                }
             </div>
 
-            <div style={{display: "flex", flexDirection: "column"}}>
+            <div style={{ display: "flex", flexDirection: "column" }}>
                 <div>
                     {text}
                 </div>
-                {props.numberOfNeighedCards % 2 === 1 && 
+                {props.numberOfNeighedCards % 2 === 1 &&
                     <div>
-                        Neigh result: {props.originalInitiatorName} <span style={{color: "red"}}>is stopped from playing </span> {props.card.title}.
+                        Neigh result: {props.originalInitiatorName} <span style={{ color: "red" }}>is stopped from playing </span> {props.card.title}.
                     </div>
                 }
-                {props.numberOfNeighedCards % 2 === 0 && 
+                {props.numberOfNeighedCards % 2 === 0 &&
                     <div>
-                        Neigh result: {props.originalInitiatorName} <span style={{color: "green"}}>can play </span> {props.card.title}.
+                        Neigh result: {props.originalInitiatorName} <span style={{ color: "green" }}>can play </span> {props.card.title}.
                     </div>
                 }
-                
+
             </div>
             {props.didVote === false &&
-                <div style={{marginLeft: "1em"}}>
-                    <DontNeighButton onClick={() => props.onDontPlayNeighClick()}>Don't neigh</DontNeighButton>
+                <div style={{ marginLeft: "1em" }}>
+                    <DontNeighButton onClick={() => {props.onDontPlayNeighClick(); playMouseClick();}}>Don't neigh</DontNeighButton>
                 </div>
-            }  
+            }
             {props.showPlayNeighButton && props.didVote === false &&
-                <div style={{marginLeft: "1em"}}>
-                    <NeighButton onClick={() => props.onPlayNeighClick()}>Play Neigh</NeighButton>
+                <div style={{ marginLeft: "1em" }}>
+                    <NeighButton onClick={() => {props.onPlayNeighClick(); playMouseClick()}}>Play Neigh</NeighButton>
                 </div>
             }
         </Wrapper>
     );
 }
 
-const Wrapper = styled.div`
+const Wrapper = styled(motion.div)`
     background-color: rgba(0,0,0,0.6);
     font-family: Open Sans Condensed;
     color: white;
@@ -109,7 +121,7 @@ const glow = keyframes`
     }
 `;
 
-const CardImage = styled.img`
+const CardImage = styled(motion.img)`
     width: 64px;
     height: 64px;
     border-radius: 12px;
