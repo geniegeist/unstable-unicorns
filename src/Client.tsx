@@ -22,7 +22,7 @@ const UnstableUnicornsClient = ({ debug }: Props) => {
             game: UnstableUnicorns,
             board: Board,
             numPlayers: 3,
-            multiplayer: SocketIO({ server: `localhost:8000` }),
+            //multiplayer: SocketIO({ server: `localhost:8000` }),
         });
 
         return <UnstableUnicornsClient matchID={"test"} playerID={"0"} />

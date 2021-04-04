@@ -39,10 +39,28 @@ const Hand = (props: Props) => {
                     setHoverCardID(undefined);
                 };
 
+                let typeText: string | undefined = undefined;
+                switch (card.type) {
+                    case "upgrade": {
+                        typeText = "An upgrade card can be placed in any stable and grants the stable owner a positive effect.";
+                        break;
+                    }
+                    case "downgrade": {
+                        typeText = "A downgrade card can be placed in any stable and grants the stable owner a negative effect.";
+                        break;
+                    }
+                    case "neigh":
+                    case "super_neigh": {
+                        typeText = "This card can be played at any time any other players plays a card.";
+                        break;
+                    }
+                }
+
                 return (
-                    <CardWrapper key={card.id} borderColor={_typeToColor(card.type)} isGlowing={props.glowingCards.includes(card.id)} transform={_transformForCard(idx, props.cards.length)} onClick={(evt) => props.onClick(evt, card.id)} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
+                    <CardWrapper key={card.id} borderColor={_typeToColor(card.type)} isGlowing={props.glowingCards.includes(card.id)} transform={_transformForCard(idx, props.cards.length)} onClick={(evt) => props.onClick(evt, card.id)} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} bringToForeground={hoverCardID === card.id}>
                         <Top>
                             <Type fontColor={_typeToColor(card.type)}>
+                                <img src={ImageLoader.icon(card.type)} width={"20px"}/>
                                 {_typeToString(card.type)}
                             </Type>
                             <Title>
@@ -51,7 +69,9 @@ const Hand = (props: Props) => {
                         </Top>
                         <CardImage image={ImageLoader.load(card.image)} />
                         {hoverCardID === card.id &&
-                            <CardHover title={card.title} scale={0.75} position="top" offset={{ x: idx < 3 ? 210 : -220, y: 0 }} text={card.description} color={_typeToColor(card.type)} />
+                            <>
+                                <CardHover title={card.title} scale={0.75} position="top" offset={{ x: idx < 3 ? 210 : -220, y: -40 }} text={card.description} color={_typeToColor(card.type)} text2={typeText} />
+                            </>
                         }
                     </CardWrapper>
                 );
@@ -68,7 +88,7 @@ const Wrapper = styled.div`
     font-family: 'Open Sans Condensed', sans-serif;
 `;
 
-const CardWrapper = styled.div<{ borderColor: string, transform: { x: number, y: number, rotate: string }, isGlowing: boolean }>`
+const CardWrapper = styled.div<{ bringToForeground: boolean, borderColor: string, transform: { x: number, y: number, rotate: string }, isGlowing: boolean }>`
     border-radius: 16px;
     width: 175px;
     height: 250px;
@@ -85,6 +105,7 @@ const CardWrapper = styled.div<{ borderColor: string, transform: { x: number, y:
         transform: translate(${props => props.transform.x}px, -90%) scale(1.5);
     }
     cursor: pointer;
+    z-index: ${props => props.bringToForeground ? 4 : 0 };
 `;
 
 const Top = styled.div`
@@ -96,6 +117,8 @@ const Top = styled.div`
 `;
 
 const Type = styled.div<{ fontColor: string }>`
+    display: flex;
+    align-content: center;
     font-weight: bold;
     font-size: 0.9em;
     color: ${props => props.fontColor};
