@@ -24,6 +24,11 @@ To play with your friends, share the link
 
 It is *playable*! However, sometimes you can get stuck in the game, e.g. when a player needs to discard a card but that player has no cards on their hand. For that, there are invisible buttons in the left top corner and right top corner. Clicking the invisible button in the right top corner will end the turn of the current player; the other button in the left top corner will end the current action scene of the player. The section *Implementation Details* will contain more information what an action scene is but for now it is incomplete. I will update it later if I have time.
 
+*Some special features*
+
+ - hover effects
+ - sound effects
+
 ## Implementation Details
 
 This game was developed using [boardgame.io](boardgame.io), React and Typescript.
