@@ -1,46 +1,34 @@
-# Getting Started with Create React App
+# Welcome to Unstable Unicorns
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This is an online game variant of Unstable Unicorns. All you need is a browser and some friends to play with you.
 
-## Available Scripts
+**Demo:** [unstable-unicorns-online.herokuapp.com/:matchID/:numOfPlayers/:playerID](unstable-unicorns-online.herokuapp.com/)
 
-In the project directory, you can run:
+To create a game type the following url into your browser
 
-### `npm start`
+ `unstable-unicorns-online.herokuapp.com/hello-world/6/0`
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+This will create a game with match id `hello-world` for `6` players. You will enter the game as a player with id `0`.
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+To play with your friends, share the link
+ `unstable-unicorns-online.herokuapp.com/hello-world/6/PLAYER_ID`
+ with your friends where you replace `PLAYER_ID` with a number from 0 to 5. Each of your friends including you should receive a unique player id. 
 
-### `npm test`
+## Current State
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+It is *playable*! However, sometimes you can get stuck in the game, e.g. when a player needs to discard a card but that player has no cards on their hand. For that, there are invisible buttons in the left top corner and right top corner. Clicking the invisible button in the right top corner will end the turn of the current player; the other button in the left top corner will end the current action scene of the player. The section *Implementation Details* will contain more information what an action scene is but for now it is incomplete. I will update it later if I have time.
 
-### `npm run build`
+## Implementation Details
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+This game was developed using [boardgame.io](boardgame.io) and Typescript.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+*To-Do: describe architecture, etc...*
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## To-Do
 
-### `npm run eject`
+ - not all cards have been implemented yet (~90% finished) 
+ - drag and drop 
+ - make the game more interactive
+ - UI...
+ - etc...
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
