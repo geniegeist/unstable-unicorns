@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import ImageLoader from '../assets/card/imageLoader';
 import { Card, CardID } from '../game/card';
@@ -8,6 +8,8 @@ import CardHover from './CardHover';
 import { motion, AnimatePresence } from 'framer-motion';
 import { _typeToColor } from './util';
 import useSound from 'use-sound';
+import { LanguageContext } from '../LanguageContextProvider';
+import { cardDescription } from '../BoardUtil';
 const MouseClickSound = require('../assets/sound/UI_MouseClick_01.ogg').default;
 const HubMouseOverSound = require('../assets/sound/Hub_Mouseover.ogg').default;
 
@@ -33,6 +35,7 @@ const NeighLabel = (props: Props) => {
     const [playHoverSound] = useSound(HubMouseOverSound, {
         volume: 0.3,
     });
+    const context = useContext(LanguageContext)
 
     let text = "";
     if (props.role === "original_initiator") {
@@ -63,9 +66,9 @@ const NeighLabel = (props: Props) => {
                 onMouseLeave={() => {
                     setShowHover(undefined);
                 }}>
-                <CardImage layoutId={`${props.card.id}`} src={ImageLoader.load(props.card.image)} />
+                <CardImage src={ImageLoader.load(props.card.image)} />
                 {showHover === props.card.id &&
-                    <CardHover title={props.card.title} position={"bottom"} offset={{ x: 80, y: -30 }} color={_typeToColor(props.card.type)} text={props.card.description} />
+                    <CardHover title={props.card.title} position={"bottom"} offset={{ x: 80, y: -30 }} color={_typeToColor(props.card.type)} text={cardDescription(props.card, context!.language)} />
                 }
             </div>
 

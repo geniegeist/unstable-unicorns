@@ -4,9 +4,11 @@ import ImageLoader from '../assets/card/imageLoader';
 import _ from 'underscore';
 import { _typeToColor } from './util';
 import CardHover from './CardHover';
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 
 import useSound from 'use-sound';
+import { LanguageContext } from '../LanguageContextProvider';
+import { cardDescription } from '../BoardUtil';
 const HandOverSound = require('../assets/sound/collection_manager_card_mouse_over.ogg').default;
 
 type Props = {
@@ -23,6 +25,7 @@ const Hand = (props: Props) => {
     const [playHandOverCardSound] = useSound(HandOverSound, {
         volume: 0.3,
     });
+    const context = useContext(LanguageContext)
 
 
     return (
@@ -70,7 +73,7 @@ const Hand = (props: Props) => {
                         <CardImage image={ImageLoader.load(card.image)} />
                         {hoverCardID === card.id &&
                             <>
-                                <CardHover title={card.title} scale={0.75} position="top" offset={{ x: idx < 3 ? 210 : -220, y: -40 }} text={card.description} color={_typeToColor(card.type)} text2={typeText} />
+                                <CardHover title={card.title} scale={0.75} position="top" offset={{ x: idx < 3 ? 210 : -220, y: -40 }} text={cardDescription(card, context!.language)} color={_typeToColor(card.type)} text2={typeText} />
                             </>
                         }
                     </CardWrapper>

@@ -78,14 +78,14 @@ var UnstableUnicorns = {
     },
     phases: {
         pregame: {
-            start: true,
+            //start: true,
             onBegin: function (G, ctx) {
                 var _a;
                 (_a = ctx.events) === null || _a === void 0 ? void 0 : _a.setActivePlayers({ all: "pregame" });
             }
         },
         main: {
-            //start: true,
+            start: true,
             onBegin: function (G, ctx) {
             }
         }

@@ -15,7 +15,7 @@ import DrawPile from './ui/DrawPile';
 import Nursery from './ui/Nursery';
 import DiscardPile from './ui/DiscardPile';
 import { CardID } from './game/card';
-import { useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { findUITargets, HoverTarget } from './BoardUtil';
 import RainbowArrow from './ui/RainbowArrow';
 import EndTurnButton from './ui/button/EndTurnButton';
@@ -28,6 +28,8 @@ import { AddFromDiscardPileToHandTarget, BringToStableTarget, DiscardTarget, DoD
 import InfoLabel from './ui/InfoLabel';
 import Finder from './ui/Finder';
 import BoardGameBegin from './BoardGameBegin';
+import React from 'react';
+import { LanguageContext } from './LanguageContextProvider';
 
 const YourTurnSound = require('./assets/sound/ALERT_YourTurn_0v2.ogg').default;
 const DrawCardSound = require('./assets/sound/draw_card_and_add_to_hand_1.ogg').default;
@@ -182,6 +184,7 @@ const Board = (props: any) => {
     const playerFieldRef = useRef<PlayerFieldHandle>(null);
     const [hoverTargets, setHoverTargets] = useState<{ sourceCardID: CardID, targets: HoverTarget[] }>();
     const [cardInteraction, setCardInteraction] = useState<CardInteraction | undefined>(undefined);
+    const context = useContext(LanguageContext);
 
     let openScenes: Array<[Instruction, Scene]> = _findInProgressScenesWithProtagonist(G, playerID);
     if (openScenes.length === 0) {
@@ -311,7 +314,23 @@ const Board = (props: any) => {
                     })
                 }}>
                     A
-            </div>
+                </div>
+                <div style={{
+                    position: "absolute", top: 0, left: 100
+                }} onClick={() => {
+                    context!.setLanguage("de")
+                }}>
+                    Deutsch
+                </div>
+                <div style={{
+                    position: "absolute", top: 0, right: 100
+                }} onClick={() => {
+                    context!.setLanguage("en")
+                }}>
+                    Englisch
+                </div>
+
+                
                 {showDeckFinder &&
                     <Finder
                         cards={showDeckFinder.map(s => G.deck[s.cardID])}
@@ -727,7 +746,8 @@ const Board = (props: any) => {
                             }
                         }, openScenes)}
                 </Bottom>
-            </Wrapper></AnimateSharedLayout>
+            </Wrapper>
+            </AnimateSharedLayout>
     );
 }
 

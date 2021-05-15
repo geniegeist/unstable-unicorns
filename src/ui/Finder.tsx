@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import styled from 'styled-components';
 import ImageLoader from '../assets/card/imageLoader';
 import BG from '../assets/ui/board-background.jpg';
+import { cardDescription } from '../BoardUtil';
 import { Card, CardID } from '../game/card';
+import { LanguageContext } from '../LanguageContextProvider';
 import CardHover from './CardHover';
 import { _typeToColor } from './util';
 
@@ -17,6 +19,8 @@ type Props = {
 
 const Finder = (props: Props) => {
     const [showHover, setShowHover] = useState<CardID | undefined>(undefined);
+    const context = useContext(LanguageContext)
+
     return (
         <Wrapper>
             {(props.showBackButton === undefined || props.showBackButton === true) &&
@@ -35,10 +39,10 @@ const Finder = (props: Props) => {
                                 <CardImage image={props.hide ? ImageLoader.load("back") : ImageLoader.load(card.image)} color={props.hide ? "black"  : _typeToColor(card.type)} />
                             </div>
                             {(!props.hide) && showHover === card.id && idx % 5 <= 2 && 
-                                <CardHover title={card.title} position={"top"} offset={{x: 150, y: 20}} color=       {_typeToColor(card.type)} text={card.description} />
+                                <CardHover title={card.title} position={"top"} offset={{x: 150, y: 20}} color=       {_typeToColor(card.type)} text={cardDescription(card, context!.language)} />
                             }
                             {(!props.hide) && showHover === card.id && idx % 5 > 2 && 
-                                <CardHover title={card.title} position={"top"} offset={{x: -300, y: 20}} color=       {_typeToColor(card.type)} text={card.description} />
+                                <CardHover title={card.title} position={"top"} offset={{x: -300, y: 20}} color=       {_typeToColor(card.type)} text={cardDescription(card, context!.language)} />
                             }
                         </Item>
                         

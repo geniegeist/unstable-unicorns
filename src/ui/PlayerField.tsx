@@ -4,10 +4,12 @@ import ImageLoader from '../assets/card/imageLoader';
 import { _typeToColor } from './util';
 import type { Card, CardID } from '../game/card';
 import useDynamicRefs from 'use-dynamic-refs';
-import React, { RefObject, useImperativeHandle, useState } from 'react';
+import React, { RefObject, useContext, useImperativeHandle, useState } from 'react';
 import CardHover from './CardHover';
 import { motion } from 'framer-motion';
 import useSound from 'use-sound';
+import { cardDescription } from '../BoardUtil';
+import { LanguageContext } from '../LanguageContextProvider';
 const HubMouseOverSound = require('../assets/sound/Hub_Mouseover.ogg').default;
 
 type Props = {
@@ -34,6 +36,7 @@ const PlayerField = React.forwardRef<PlayerFieldHandle, Props>((props, ref) => {
     const [playHubMouseOverSound] = useSound(HubMouseOverSound, {
         volume: 0.2,
     });
+    const context = useContext(LanguageContext)
 
     useImperativeHandle(ref, () => ({
         getStableItemRef: (cardID: CardID) => {
@@ -76,7 +79,7 @@ const PlayerField = React.forwardRef<PlayerFieldHandle, Props>((props, ref) => {
                                             }}>
                                             <UpgradeDowngradeImage key={c.id} isTranslucent={props.highlightMode ? !props.highlightMode.includes(c.id) : false} image={ImageLoader.load(c.image)} onClick={() => props.onStableCardClick(c.id)} />
                                             {showHover === c.id &&
-                                                <CardHover title={c.title} position={"top"} offset={{ x: 40, y: 0 }} color={_typeToColor(c.type)} text={c.description} />
+                                                <CardHover title={c.title} position={"top"} offset={{ x: 40, y: 0 }} color={_typeToColor(c.type)} text={cardDescription(c, context!.language)} />
                                             }
                                         </div>
                                     );
@@ -101,7 +104,7 @@ const PlayerField = React.forwardRef<PlayerFieldHandle, Props>((props, ref) => {
                                                 onMouseLeave={() => props.onStableCardMouseLeave(c.id)}
                                             />
                                             {showHover === c.id &&
-                                                <CardHover title={c.title} position={"top"} offset={{ x: 64, y: 0 }} color={_typeToColor(c.type)} text={c.description} />
+                                                <CardHover title={c.title} position={"top"} offset={{ x: 64, y: 0 }} color={_typeToColor(c.type)} text={cardDescription(c, context!.language)} />
                                             }
                                         </div>
                                     );

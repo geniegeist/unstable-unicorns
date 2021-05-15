@@ -243,25 +243,26 @@ function executeDo(G, ctx, instructionID, param) {
         var targetPlayer = findOwnerOfCard(G, paramDestroy.cardID);
         // check if it contains the save_mate_by_sacrifice effect
         if (G.playerEffects[targetPlayer].find(function (eff) { return eff.effect.key === "save_mate_by_sacrifice"; })) {
-            var idx = action.instructions.findIndex(function (ac) { return ac.id === instruction.id; });
+            /*
+            const idx = action.instructions.findIndex(ac => ac.id === instruction.id);
             scene.actions.splice(idx + 1, 0, {
                 type: "action",
                 instructions: [{
-                        id: underscore_1["default"].uniqueId(),
-                        protagonist: targetPlayer,
-                        state: "open",
-                        "do": {
-                            key: "interveneDestroyBySacrifice",
-                            info: {
-                                cardToSave: paramDestroy.cardID,
-                                paramDestroy: paramDestroy
-                            }
-                        },
-                        ui: {
-                            type: "single_action_popup"
+                    id: _.uniqueId(),
+                    protagonist: targetPlayer,
+                    state: "open",
+                    do: {
+                        key: "interveneDestroyBySacrifice",
+                        info: {
+                            cardToSave: paramDestroy.cardID,
+                            paramDestroy
                         }
-                    }]
-            });
+                    },
+                    ui: {
+                        type: "single_action_popup",
+                    }
+                }]
+            });*/
         }
         else {
             KeyToFunc[instruction["do"].key](G, ctx, param);
@@ -845,17 +846,35 @@ exports.findMakeSomeoneDiscardTarget = findMakeSomeoneDiscardTarget;
 function canMakeSomeoneDiscard(G, ctx, protagonist) {
     return findMakeSomeoneDiscardTarget(G, ctx, protagonist).length > 0;
 }
-function interveneDestroyBySacrifice(G, ctx, param) {
+/////////////////////////////////////////////////
+/*
+interface InterventionDestroyBySacrifice {
+    key: "interveneDestroyBySacrifice";
+    info: {
+        cardToSave: CardID;
+        paramDestroy: ParamDestroy;
+    }
+}
+
+type ParamInterventionDestroyBySacrifice = {
+    success: false;
+    paramDestroy: ParamDestroy;
+} | {
+    success: true;
+    paramSacrifice: ParamSacrifice;
+}
+
+function interveneDestroyBySacrifice(G: UnstableUnicornsGame, ctx: Ctx, param: ParamInterventionDestroyBySacrifice) {
     if (param.success) {
         sacrifice(G, ctx, param.paramSacrifice);
-    }
-    else {
+    } else {
         destroy(G, ctx, param.paramDestroy);
     }
 }
+*/
 /////////////////////////////////////////////////
 var KeyToFunc = {
-    steal: steal, pull: pull, pullRandom: pullRandom, discard: discard, destroy: destroy, sacrifice: sacrifice, search: search, revive: revive, draw: draw, addFromDiscardPileToHand: addFromDiscardPileToHand, reviveFromNursery: reviveFromNursery, returnToHand: returnToHand, bringToStable: bringToStable, makeSomeoneDiscard: makeSomeoneDiscard, swapHands: swapHands, shakeUp: shakeUp, move: move, move2: move2, reset: reset, shuffleDiscardPileIntoDrawPile: shuffleDiscardPileIntoDrawPile, backKick: backKick, unicornSwap1: unicornSwap1, unicornSwap2: unicornSwap2, blatantThievery1: blatantThievery1, interveneDestroyBySacrifice: interveneDestroyBySacrifice
+    steal: steal, pull: pull, pullRandom: pullRandom, discard: discard, destroy: destroy, sacrifice: sacrifice, search: search, revive: revive, draw: draw, addFromDiscardPileToHand: addFromDiscardPileToHand, reviveFromNursery: reviveFromNursery, returnToHand: returnToHand, bringToStable: bringToStable, makeSomeoneDiscard: makeSomeoneDiscard, swapHands: swapHands, shakeUp: shakeUp, move: move, move2: move2, reset: reset, shuffleDiscardPileIntoDrawPile: shuffleDiscardPileIntoDrawPile, backKick: backKick, unicornSwap1: unicornSwap1, unicornSwap2: unicornSwap2, blatantThievery1: blatantThievery1
 };
 /////////////////////////////////////////////////
 //

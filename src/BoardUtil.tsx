@@ -43,3 +43,7 @@ export function findUITargets(G: UnstableUnicornsGame, ctx: Ctx, instruction: In
 
     return targets;
 }
+
+export function cardDescription(card: Card, language: "en" | "de"): string {
+    return card.description[language];
+}

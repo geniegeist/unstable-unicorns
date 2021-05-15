@@ -2,13 +2,15 @@ import styled, { css, keyframes } from 'styled-components';
 import type { Card, CardID } from "../game/card";
 import ImageLoader from '../assets/card/imageLoader';
 import { _typeToColor } from './util';
-import { useState, RefObject } from 'react';
+import { useState, RefObject, useContext } from 'react';
 import React from 'react';
 import { useImperativeHandle } from 'react';
 import useDynamicRefs from 'use-dynamic-refs';
 import CardHover from './CardHover';
 import { motion } from 'framer-motion';
 import useSound from 'use-sound';
+import { LanguageContext } from '../LanguageContextProvider';
+import { cardDescription } from '../BoardUtil';
 const MouseClickSound = require('../assets/sound/board_common_dirt_poke_1.ogg').default;
 
 
@@ -36,6 +38,7 @@ const Stable = React.forwardRef<StableHandle, Props>((props, ref) => {
     const [playMouseClick] = useSound(MouseClickSound, {
         volume: 0.2,
     });
+    const context = useContext(LanguageContext)
 
     useImperativeHandle(ref, () => ({
         getStableItemRef: (cardID: CardID) => {
@@ -69,7 +72,7 @@ const Stable = React.forwardRef<StableHandle, Props>((props, ref) => {
                                 isTranslucent={props.highlightMode ? !props.highlightMode.includes(card.id) : false}
                             />
                             {showHover === card.id &&
-                                <CardHover title={card.title} position={"bottom"} offset={{x: 45, y: 10}} color={_typeToColor(card.type)} text={card.description}>
+                                <CardHover title={card.title} position={"bottom"} offset={{x: 45, y: 10}} color={_typeToColor(card.type)} text={cardDescription(card, context!.language)}>
                                 {props.renderAccessoryHoverItem(card.id)}
                                 </CardHover>
                             }
@@ -101,7 +104,7 @@ const Stable = React.forwardRef<StableHandle, Props>((props, ref) => {
                                 isTranslucent={props.highlightMode ? !props.highlightMode.includes(card.id) : false}
                             />
                             {showHover === card.id &&
-                                <CardHover title={card.title} position={"bottom"} offset={{x: 80, y: 0}} color={_typeToColor(card.type)} text={card.description}>
+                                <CardHover title={card.title} position={"bottom"} offset={{x: 80, y: 0}} color={_typeToColor(card.type)} text={cardDescription(card, context!.language)}>
                                 {props.renderAccessoryHoverItem(card.id)}
                                 </CardHover>
                             }

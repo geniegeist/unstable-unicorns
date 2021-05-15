@@ -242,7 +242,7 @@ export function canEnter(G: UnstableUnicornsGame, ctx: Ctx, param: ParamEnter) {
 
 /////////////////////////////////////////////////
 
-export type Do = DoSteal | DoPull | DoPullRandom | DoDiscard | DoDestroy | DoSacrifice | DoSearch | DoRevive | DoDraw | DoAddFromDiscardPileToHand | DoReviveFromNursery | DoReturnToHand | DoBringToStable | /*DoPeekAddReorder |*/ DoMakeSomeoneDiscard | DoSwapHands | DoShakeUp | DoReset | DoMove | DoMove2 | DoBackKick | DoShuffleDiscardPileIntoDrawPile | DoUnicornSwap1 | DoUnicornSwap2 |DoBlatantThievery1 | InterventionDestroyBySacrifice;
+export type Do = DoSteal | DoPull | DoPullRandom | DoDiscard | DoDestroy | DoSacrifice | DoSearch | DoRevive | DoDraw | DoAddFromDiscardPileToHand | DoReviveFromNursery | DoReturnToHand | DoBringToStable | /*DoPeekAddReorder |*/ DoMakeSomeoneDiscard | DoSwapHands | DoShakeUp | DoReset | DoMove | DoMove2 | DoBackKick | DoShuffleDiscardPileIntoDrawPile | DoUnicornSwap1 | DoUnicornSwap2 |DoBlatantThievery1 ;
 
 export function executeDo(G: UnstableUnicornsGame, ctx: Ctx, instructionID: string, param: { protagonist: PlayerID }) {
     const [scene, action, instruction] = _findInstructionWithID(G, instructionID)!;
@@ -264,6 +264,7 @@ export function executeDo(G: UnstableUnicornsGame, ctx: Ctx, instructionID: stri
 
         // check if it contains the save_mate_by_sacrifice effect
         if (G.playerEffects[targetPlayer].find(eff => eff.effect.key === "save_mate_by_sacrifice")) {
+            /*
             const idx = action.instructions.findIndex(ac => ac.id === instruction.id);
             scene.actions.splice(idx + 1, 0, {
                 type: "action",
@@ -282,7 +283,7 @@ export function executeDo(G: UnstableUnicornsGame, ctx: Ctx, instructionID: stri
                         type: "single_action_popup",
                     }
                 }]
-            });
+            });*/
         } else {
             KeyToFunc[instruction.do.key](G, ctx, param);
         }
@@ -1261,6 +1262,7 @@ function canMakeSomeoneDiscard(G: UnstableUnicornsGame, ctx: Ctx, protagonist: P
 
 /////////////////////////////////////////////////
 
+/*
 interface InterventionDestroyBySacrifice {
     key: "interveneDestroyBySacrifice";
     info: {
@@ -1284,12 +1286,12 @@ function interveneDestroyBySacrifice(G: UnstableUnicornsGame, ctx: Ctx, param: P
         destroy(G, ctx, param.paramDestroy);
     }
 }
-
+*/
 
 /////////////////////////////////////////////////
 
 const KeyToFunc: { [key: string]: (G: UnstableUnicornsGame, ctx: Ctx, param: any) => void } = {
-    steal, pull, pullRandom, discard, destroy, sacrifice, search, revive, draw, addFromDiscardPileToHand, reviveFromNursery, returnToHand, bringToStable, makeSomeoneDiscard, swapHands, shakeUp, move, move2, reset, shuffleDiscardPileIntoDrawPile, backKick, unicornSwap1, unicornSwap2, blatantThievery1, interveneDestroyBySacrifice,
+    steal, pull, pullRandom, discard, destroy, sacrifice, search, revive, draw, addFromDiscardPileToHand, reviveFromNursery, returnToHand, bringToStable, makeSomeoneDiscard, swapHands, shakeUp, move, move2, reset, shuffleDiscardPileIntoDrawPile, backKick, unicornSwap1, unicornSwap2, blatantThievery1,
 }
 
 /////////////////////////////////////////////////

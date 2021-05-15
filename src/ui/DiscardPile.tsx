@@ -3,10 +3,13 @@ import styled from 'styled-components';
 import type { Card, CardID } from "../game/card";
 import ImageLoader from '../assets/card/imageLoader';
 import { _typeToColor } from './util';
-import  { useState } from 'react';
+import  { useContext, useState } from 'react';
 import CardHover from './CardHover';
 import useSound from 'use-sound';
+import { LanguageContext } from '../LanguageContextProvider';
+import { cardDescription } from '../BoardUtil';
 const HubMouseOverSound = require('../assets/sound/Hub_Mouseover.ogg').default;
+
 
 type Props = {
     cards: Card[];
@@ -18,6 +21,8 @@ const DiscardPile = (props: Props) => {
         volume: 0.2,
     });
 
+    const context = useContext(LanguageContext)
+
     const [hover, setHover] = useState<boolean>(false);
     return (
         <Wrapper onClick={props.onClick} onMouseEnter={() => {setHover(true);playHubMouseOverSound();}} onMouseLeave={() => setHover(false)}>
@@ -26,7 +31,7 @@ const DiscardPile = (props: Props) => {
                 </CardImage>
             }
             {_.last(props.cards) && hover &&
-                <CardHover title={_.last(props.cards)!.title} position={"top"} offset={{x: 120, y: -10}} color={_typeToColor(_.last(props.cards)!.type)} text={_.last(props.cards)!.description} />
+                <CardHover title={_.last(props.cards)!.title} position={"top"} offset={{x: 120, y: -10}} color={_typeToColor(_.last(props.cards)!.type)} text={cardDescription(_.last(props.cards)!, context!.language)} />
             }
             
         </Wrapper>
