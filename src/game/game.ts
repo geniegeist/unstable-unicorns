@@ -136,13 +136,13 @@ const UnstableUnicorns = {
     },
     phases: {
         pregame: {
-            //start: true,
+            start: true,
             onBegin: (G: UnstableUnicornsGame, ctx: Ctx) => {
                 ctx.events?.setActivePlayers!({all: "pregame"})
             }
         },
         main: {
-            start: true,
+            //start: true,
             onBegin: (G: UnstableUnicornsGame, ctx: Ctx) => {
 
             }
