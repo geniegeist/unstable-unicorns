@@ -4,6 +4,8 @@ This is an online game variant of Unstable Unicorns. All you need is a browser a
 
 **Demo:** [unstable-unicorns-online.herokuapp.com/:matchID/:numOfPlayers/:playerID](https://unstable-unicorns-online.herokuapp.com/hello-world/6/0)
 
+![Screenshot of Unstable Unicorns](https://i.imgur.com/jfeCMAw.png)
+
 To create a game type the following url into your browser
 
  `unstable-unicorns-online.herokuapp.com/hello-world/6/0`
